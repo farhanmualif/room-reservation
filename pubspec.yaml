@@ -1,0 +1,50 @@
+name: zenith_coffee_shop
+description: "A coffee shop room reservation app."
+publish_to: "none"
+
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.4.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Menambahkan dependencies untuk provider dan http
+  provider: ^6.1.2
+  http: ^0.13.3
+
+  # Cupertino Icons untuk iOS style icons
+  cupertino_icons: ^1.0.6
+
+  # Firebase dependencies
+  firebase_auth: ^4.0.0
+  firebase_core: ^2.0.0
+  intl: ^0.19.0
+  cloud_firestore: ^4.17.5
+  firebase_database: ^10.5.7
+  readmore: ^3.0.0
+  image_picker: ^1.1.2
+  firebase_storage: ^11.6.5
+  uuid: ^4.5.0
+  # midtrans payment gateway
+  midtrans_sdk: ^0.3.4
+  table_calendar: ^3.1.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/
+    - assets/images/regular_room.png
+    - assets/images/vvip_room.png
+    - assets/images/background-app.jpg
+    - assets/images/background-app.png
+    - assets/images/placeholder.png

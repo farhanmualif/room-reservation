@@ -1,0 +1,17 @@
+version: "3.8"
+services:
+  flutter-app:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - .:/home/developer/app
+      - flutter-pub-cache:/home/developer/.pub-cache
+      - dart-tool:/home/developer/.dart_tool
+    devices:
+      - "/dev/bus/usb:/dev/bus/usb"
+    command: /home/developer/app/run.sh
+
+volumes:
+  flutter-pub-cache:
+  dart-tool:

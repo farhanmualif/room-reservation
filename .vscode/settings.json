@@ -1,0 +1,6 @@
+{
+  "dart.flutterSdkPath": ".fvm/versions/3.24.0",
+  "java.compile.nullAnalysis.mode": "automatic",
+  "java.configuration.updateBuildConfiguration": "automatic",
+  "cmake.ignoreCMakeListsMissing": true
+}

@@ -1,0 +1,49 @@
+{
+  "project_info": {
+    "project_number": "538859494082",
+    "firebase_url": "https://room-reservation-d69c4-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "room-reservation-d69c4",
+    "storage_bucket": "room-reservation-d69c4.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:538859494082:android:79a6f0b76db971d156795b",
+        "android_client_info": {
+          "package_name": "com.example.zenith_coffee_shop"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAsnyj3l-uKkXtxCZ1S0VLOXfpm4NYTez8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:538859494082:android:40f40db66d3ff37f56795b",
+        "android_client_info": {
+          "package_name": "com.zenith_coffee_shop"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAsnyj3l-uKkXtxCZ1S0VLOXfpm4NYTez8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
