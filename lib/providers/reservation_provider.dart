@@ -3,11 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:zenith_coffee_shop/models/booking_room.dart';
 import 'package:zenith_coffee_shop/models/order.dart';
+import 'package:zenith_coffee_shop/models/reservation.dart';
+import 'package:zenith_coffee_shop/models/room.dart';
+import 'package:zenith_coffee_shop/models/room_service.dart';
+import 'package:zenith_coffee_shop/models/room_type_class.dart';
 
 class ReservationProvider extends ChangeNotifier {
   final DatabaseReference _dbRef =
       FirebaseDatabase.instance.ref().child('reservations');
-
   final Set<DateTime> _bookedDates = {};
   final Map<DateTime, Set<TimeOfDay>> _bookedTimes = {};
 
@@ -17,14 +20,15 @@ class ReservationProvider extends ChangeNotifier {
   double? _totalPayment;
   List<BookingRoom> _bookingHistory = [];
 
-  // String? _paymentMethod;
-
   DateTime? get selectedDate => _selectedDate;
   TimeOfDay? get startTime => _startTime;
   TimeOfDay? get endTime => _endTime;
   double? get totalPayment => _totalPayment;
   List<BookingRoom> get bookingHistory => _bookingHistory;
-  // String? get paymentMethod => _paymentMethod;
+
+  final List<Reservation> _reservations = [];
+
+  List<Reservation> get reservations => _reservations;
 
   void setTotalPayment(double totalPayment) {
     _totalPayment = totalPayment;
@@ -153,55 +157,68 @@ class ReservationProvider extends ChangeNotifier {
       }
       return true;
     } catch (e) {
-      print('Error checking time slot availability: $e');
       rethrow;
     }
   }
 
-  Future<List<BookingRoom>> getAll() async {
+  Future<void> getAllReservations() async {
     try {
-      // Kosongkan daftar layanan sebelum mengambil yang baru
-      _bookingHistory.clear();
+      final DatabaseReference dbRef = FirebaseDatabase.instance.ref();
+      _reservations.clear();
 
-      List<BookingRoom> services = [];
-      final event = await _dbRef.once();
-      final snapshot = event.snapshot;
+      // Fetch reservations
+      DataSnapshot reservationsSnapshot =
+          await dbRef.child('reservations').get();
 
-      debugPrint("Snapshot data: ${snapshot.value}"); // Log data Firebase
+      if (reservationsSnapshot.value != null) {
+        Map<dynamic, dynamic> reservationsData =
+            reservationsSnapshot.value as Map<dynamic, dynamic>;
 
-      if (snapshot.value != null) {
-        for (var child in snapshot.children) {
-          Map<String, dynamic> data =
-              Map<String, dynamic>.from(child.value as Map);
-          BookingRoom history = BookingRoom(
-            id: child.key!,
-            roomId: data['room_id'],
-            ordererName: data['orderer_name'],
-            accountId: data['account_id'],
-            ordererEmail: data['orderer_email'],
-            ordererPhone: data['orderer_phone'],
-            totalPrice: data['total_price'],
-            extraServices: data['extra_services'],
-            status: data['status'],
-            paid: data['paid'],
-            paymentMethod: data['payment_method'],
-            date: data['date'],
-            startTime: data['start_time'],
-            endTime: data['end_time'],
-          );
-          _bookingHistory.add(history);
-          services.add(history);
+        for (var entry in reservationsData.entries) {
+          Reservation reservation = Reservation.fromMap(
+              entry.key, Map<String, dynamic>.from(entry.value));
+
+          // Fetch related room data
+          DataSnapshot snapshot =
+              await dbRef.child('rooms').child(reservation.roomId).get();
+
+          print("room id ${reservation.roomId}");
+
+          if (snapshot.value != null) {
+            reservation.room = Room.fromJson(snapshot.key!,
+                Map<String, dynamic>.from(snapshot.value as Map));
+
+            // Fetch room service data
+            DataSnapshot serviceSnapshot = await dbRef
+                .child('room_services')
+                .child(reservation.room!.serviceId!)
+                .get();
+
+            if (serviceSnapshot.value != null) {
+              reservation.roomService = RoomService.fromJson(
+                  serviceSnapshot.key!,
+                  Map<String, dynamic>.from(serviceSnapshot.value as Map));
+            }
+
+            // Fetch room type class data
+            DataSnapshot typeSnapshot = await dbRef
+                .child('room_types_class')
+                .child(reservation.room!.roomTypeId!)
+                .get();
+            if (typeSnapshot.value != null) {
+              reservation.roomTypeClass = RoomTypeClass.fromJson(
+                  typeSnapshot.key!,
+                  Map<String, dynamic>.from(typeSnapshot.value as Map));
+            }
+          }
+
+          _reservations.add(reservation);
         }
-      } else {
-        debugPrint("Snapshot is null");
       }
 
-      debugPrint("Services loaded: ${services.length}");
-      notifyListeners(); // Panggil notifyListeners agar UI ter-update
-      return services;
+      notifyListeners();
     } catch (e) {
-      debugPrint("Failed to get Services: $e");
-      return [];
+      debugPrint("Failed to fetch reservations: $e");
     }
   }
 

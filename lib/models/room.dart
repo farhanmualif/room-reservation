@@ -19,17 +19,17 @@ class Room {
     this.isAvailable = true,
   });
 
-
   factory Room.fromJson(String id, Map<dynamic, dynamic> json) {
     return Room(
       id: id,
-      description: json['description'] as String,
-      image: json['image'] as String,
-      isAvailable: json['is_available'] as bool,
-      name: json['name'] as String,
-      price: json['price'] as int,
-      roomTypeId: json['room_type_id'] as String,
-      serviceId: json['service_id'] as String,
+      description: json['description'] as String?,
+      image: json['image'] as String?,
+      isAvailable:
+          json['is_available'] == null ? true : json['is_available'] as bool,
+      name: json['name'] as String?,
+      price: json['price'] as int?,
+      roomTypeId: json['room_type_id'] as String?,
+      serviceId: json['service_id'] as String?,
     );
   }
 
@@ -67,17 +67,16 @@ class RoomResponse {
     this.isAvailable = true,
   });
 
-  // Factory method to create a Room from a Map
   factory RoomResponse.fromJson(String id, Map<dynamic, dynamic> json) {
     return RoomResponse(
       id: id,
-      description: json['description'] as String,
-      image: json['image'] as String,
-      isAvailable: json['is_available'] as bool,
-      name: json['name'] as String,
-      price: json['price'] as int,
-      roomType: json['room_type'] as String,
-      service: json['service'] as String,
+      description: json['description'] as String? ?? '',
+      image: json['image'] as String? ?? '',
+      isAvailable: json['is_available'] as bool? ?? true,
+      name: json['name'] as String? ?? '',
+      price: json['price'] as int? ?? 0,
+      roomType: json['room_type'] as String? ?? '',
+      service: json['service'] as String? ?? '',
     );
   }
 

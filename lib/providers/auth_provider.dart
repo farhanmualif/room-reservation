@@ -11,20 +11,7 @@ class AuthProvider with ChangeNotifier {
 
   // Sign in method
   Future<User> signIn(Profile profile) async {
-    if (profile.password == null || profile.password!.isEmpty) {
-      throw FirebaseAuthException(
-        code: 'invalid-password',
-        message: 'Password cannot be null or empty',
-      );
-    }
-
-    try {
-      return await _signInWithEmailAndPassword(
-          profile.email, profile.password!);
-    } on FirebaseAuthException catch (e) {
-      debugPrint('Sign in error: ${e.message}');
-      rethrow;
-    }
+    return await _signInWithEmailAndPassword(profile.email, profile.password!);
   }
 
   Future<User> _signInWithEmailAndPassword(
@@ -119,12 +106,12 @@ class AuthProvider with ChangeNotifier {
   // Stream to listen for auth state changes
   Stream<User?> get authStateChanges => _firebaseAuth.authStateChanges();
 
-  AuthProvider() {
-    authStateChanges.listen((User? user) {
-      _currentUser = user;
-      notifyListeners(); // Notify listeners that the current user has changed
-    });
-  }
+  // AuthProvider() {
+  //   authStateChanges.listen((User? user) {
+  //     _currentUser = user;
+  //     notifyListeners(); // Notify listeners that the current user has changed
+  //   });
+  // }
 
   // Public _dbRef
   DatabaseReference get dbRef => _dbRef;

@@ -7,11 +7,13 @@ import 'package:provider/provider.dart';
 import 'package:zenith_coffee_shop/helper/generate_time.dart';
 import 'package:zenith_coffee_shop/helper/idr_format_currency.dart';
 import 'package:zenith_coffee_shop/models/order.dart';
+import 'package:zenith_coffee_shop/models/room.dart';
 import 'package:zenith_coffee_shop/providers/auth_provider.dart';
 import 'package:zenith_coffee_shop/providers/extra_services_provider.dart';
 import 'package:zenith_coffee_shop/providers/profiles_provider.dart';
 import 'package:zenith_coffee_shop/providers/reservation_provider.dart';
 import 'package:zenith_coffee_shop/providers/room_provider.dart';
+import 'package:zenith_coffee_shop/providers/room_services_provider.dart';
 import 'package:zenith_coffee_shop/services/payment_service.dart';
 import 'package:zenith_coffee_shop/themes/app_color.dart';
 
@@ -45,6 +47,7 @@ class _OrderRoomFormContent extends StatelessWidget {
   final _orderersNameController = TextEditingController();
   final _priceServiceController = TextEditingController();
   final _totalPaymentController = TextEditingController();
+  final _ordererPhoneControler = TextEditingController();
   String _paymentMethod = "COD";
 
   @override
@@ -52,8 +55,8 @@ class _OrderRoomFormContent extends StatelessWidget {
     return Scaffold(
       body: Material(
         color: Colors.black,
-        child: Consumer<AuthProvider>(
-          builder: (context, authProvider, child) {
+        child: Consumer2<AuthProvider, RoomProvider>(
+          builder: (context, authProvider, roomProvider, child) {
             return SafeArea(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -82,6 +85,13 @@ class _OrderRoomFormContent extends StatelessWidget {
                           children: [
                             const SizedBox(height: 40),
                             _buildTextField(_orderersNameController, 'Nama'),
+                            const SizedBox(height: 16),
+                            _buildTextField(
+                                _ordererPhoneControler, 'No Telfon'),
+                            const SizedBox(height: 16),
+                            _buildDropdownRoomField(),
+                            const SizedBox(height: 16),
+                            const SizedBox(height: 16),
                             const SizedBox(height: 16),
                             _buildDropdownRoomTypeField(),
                             const SizedBox(height: 16),
@@ -132,12 +142,31 @@ class _OrderRoomFormContent extends StatelessWidget {
     final extraService = context.read<ExtraServicesProvider>();
     final authProvider = context.read<AuthProvider>();
     PaymentService paymentService = PaymentService();
+    print(roomProvider.selectedDetailRoom!.room.id);
 
     // Validasi input
     if (_orderersNameController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Nama Tidak boleh kosong'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+    if (_orderersNameController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Nama Tidak boleh kosong'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+    if (_ordererPhoneControler.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No Telfon Pem esan Tidak boleh kosong'),
           backgroundColor: Colors.redAccent,
         ),
       );
@@ -193,7 +222,7 @@ class _OrderRoomFormContent extends StatelessWidget {
         accountId: authProvider.userId!,
         ordererName: _orderersNameController.text,
         ordererEmail: profileProvider.currentProfile!.email,
-        ordererPhone: profileProvider.currentProfile!.phoneNumber,
+        ordererPhone: _ordererPhoneControler.text,
         totalPrice: totalPrice.toDouble(),
         extraServices: extraService.extraServicesSelected
             .map((service) => service.id)
@@ -251,15 +280,17 @@ class _OrderRoomFormContent extends StatelessWidget {
     return Consumer<RoomProvider>(
       builder: (context, roomProvider, child) {
         _priceServiceController.text =
-            "${roomProvider.selectedDetailRoom!.roomService.price}";
+            "${roomProvider.selectedDetailRoom?.roomService.price}";
         return TextField(
           readOnly: true,
           controller: _priceServiceController,
           style: const TextStyle(color: Colors.white),
           decoration: InputDecoration(
             prefixText: "Rp. ",
-            hintText: currencyFormatter
-                .format(roomProvider.selectedDetailRoom!.roomService.price),
+            hintText: roomProvider.selectedDetailRoom != null
+                ? currencyFormatter
+                    .format(roomProvider.selectedDetailRoom?.roomService.price)
+                : "0",
             hintStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
             filled: true,
             fillColor: Colors.white.withOpacity(0.1),
@@ -288,7 +319,7 @@ class _OrderRoomFormContent extends StatelessWidget {
                 ? "${reservationProvider.totalPayment}"
                 : roomProvider.selectedDetailRoom != null
                     ? "${roomProvider.selectedDetailRoom!.room.price}"
-                    : "",
+                    : "0",
             hintStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
             filled: true,
             fillColor: Colors.white.withOpacity(0.1),
@@ -322,19 +353,19 @@ class _OrderRoomFormContent extends StatelessWidget {
             ),
             style: const TextStyle(color: Colors.white),
             dropdownColor: Colors.grey[800],
-            value: roomProvider.selectedDetailRoom!.roomType.name,
+            value: roomProvider.selectedDetailRoom?.roomType.name,
             items: [
               DropdownMenuItem<String>(
-                value: roomProvider.selectedDetailRoom!.roomType.name,
+                value: roomProvider.selectedDetailRoom?.roomType.name,
                 child: Text(
-                  roomProvider.selectedDetailRoom!.roomType.name,
+                  roomProvider.selectedDetailRoom?.roomType.name ?? "",
                   style: const TextStyle(color: Colors.white),
                 ),
               ),
             ],
             onChanged: null, // This makes the dropdown disabled
             disabledHint: Text(
-              roomProvider.selectedDetailRoom!.roomType.name,
+              roomProvider.selectedDetailRoom?.roomType.name ?? "",
               style: TextStyle(color: Colors.white.withOpacity(0.7)),
             ),
           ),
@@ -343,7 +374,7 @@ class _OrderRoomFormContent extends StatelessWidget {
     );
   }
 
-  Widget _buildDropdownServiceField() {
+  Widget _buildDropdownRoomField() {
     return Consumer<RoomProvider>(
       builder: (context, roomProvider, child) {
         return Container(
@@ -351,9 +382,9 @@ class _OrderRoomFormContent extends StatelessWidget {
             color: Colors.white.withOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: DropdownButtonFormField<String>(
+          child: DropdownButtonFormField<Room>(
             decoration: InputDecoration(
-              hintText: "Service",
+              hintText: "Pilih Ruangan",
               hintStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
               border: InputBorder.none,
               contentPadding:
@@ -361,22 +392,94 @@ class _OrderRoomFormContent extends StatelessWidget {
             ),
             style: const TextStyle(color: Colors.white),
             dropdownColor: Colors.grey[800],
-            value: roomProvider.selectedDetailRoom!.roomService.name,
+            value: roomProvider.selectedRoom,
             items: [
-              DropdownMenuItem<String>(
-                value: roomProvider.selectedDetailRoom!.roomService.name,
-                child: Text(
-                  roomProvider.selectedDetailRoom!.roomService.name,
-                  style: const TextStyle(color: Colors.white),
-                ),
-              ),
+              ...roomProvider.rooms.map((room) {
+                return DropdownMenuItem<Room>(
+                  value: room,
+                  child: Text(
+                    room.name ?? "",
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                );
+              }),
             ],
-            onChanged: null, // This makes the dropdown disabled
-            disabledHint: Text(
-              roomProvider.selectedDetailRoom!.roomService.name,
-              style: TextStyle(color: Colors.white.withOpacity(0.7)),
-            ),
+            onChanged: (Room? room) async {
+              DetailRoom? detailRoom =
+                  await roomProvider.getRoomDetail(room!.id!);
+              roomProvider.selectDetailRoom(detailRoom!);
+            }, // This makes the dropdown disabled
           ),
+        );
+      },
+    );
+  }
+
+  Widget _buildDropdownServiceField() {
+    return Consumer2<RoomProvider, RoomServicesProvider>(
+      builder: (context, roomProvider, roomServicesProvider, child) {
+        return Container(
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: roomProvider.selectDetailRoom != null
+              ? DropdownButtonFormField<String>(
+                  decoration: InputDecoration(
+                    hintText: "Service",
+                    hintStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 14),
+                  ),
+                  style: const TextStyle(color: Colors.white),
+                  dropdownColor: Colors.grey[800],
+                  value: roomProvider.selectedDetailRoom?.roomService.name,
+                  items: [
+                    DropdownMenuItem<String>(
+                      value: roomProvider.selectedDetailRoom?.roomService.name,
+                      child: Text(
+                        roomProvider.selectedDetailRoom?.roomService.name ?? "",
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                    ),
+                  ],
+                  onChanged: null, // This makes the dropdown disabled
+                  disabledHint: Text(
+                    roomProvider.selectedDetailRoom?.roomService.name ?? "",
+                    style: TextStyle(color: Colors.white.withOpacity(0.7)),
+                  ),
+                )
+              : DropdownButtonFormField<String>(
+                  decoration: InputDecoration(
+                    hintText: "Service",
+                    hintStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 14),
+                  ),
+                  style: const TextStyle(color: Colors.white),
+                  dropdownColor: Colors.grey[800],
+                  value: "",
+                  items: [
+                    ...roomServicesProvider.services.map((service) {
+                      return DropdownMenuItem<String>(
+                        value:
+                            roomProvider.selectedDetailRoom?.roomService.name,
+                        child: Text(
+                          roomProvider.selectedDetailRoom?.roomService.name ??
+                              "",
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                      );
+                    }),
+                  ],
+                  onChanged: null, // This makes the dropdown disabled
+                  disabledHint: Text(
+                    roomProvider.selectedDetailRoom?.roomService.name ?? "",
+                    style: TextStyle(color: Colors.white.withOpacity(0.7)),
+                  ),
+                ),
         );
       },
     );
@@ -423,7 +526,7 @@ class _OrderRoomFormContent extends StatelessWidget {
               _paymentMethod = value!;
             },
             disabledHint: Text(
-              roomProvider.selectedDetailRoom!.roomService.name,
+              roomProvider.selectedDetailRoom?.roomService.name ?? "",
               style: TextStyle(color: Colors.white.withOpacity(0.7)),
             ),
           ),

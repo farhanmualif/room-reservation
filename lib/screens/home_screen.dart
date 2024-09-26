@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:zenith_coffee_shop/providers/auth_provider.dart';
 import 'package:zenith_coffee_shop/providers/profiles_provider.dart';
 import 'package:zenith_coffee_shop/screens/order_history.dart';
+import 'package:zenith_coffee_shop/screens/order_room_form.dart';
 import 'package:zenith_coffee_shop/screens/profile_page.dart';
 import 'package:zenith_coffee_shop/screens/room_selection_screen.dart';
 
@@ -18,8 +19,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   final List<Widget> _children = [
     const RoomSelectionPage(),
-    const ProfilePage(),
-    OrderHistoryPage(),
+    const OrderRoomForm(),
+    const OrderHistoryPage(),
     const ProfilePage(),
   ];
 

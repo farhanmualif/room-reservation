@@ -155,7 +155,7 @@ class MyApp extends StatelessWidget {
               '/room_type_list': (context) => const RoomTypeListScreen(),
               '/order_confirmation': (context) => OrderConfirmationPage(),
               '/profile': (context) => const ProfilePage(),
-              '/order_history': (context) => OrderHistoryPage(),
+              '/order_history': (context) => const OrderHistoryPage(),
               '/payment_done': (context) => const PaymentDone(),
             },
           );

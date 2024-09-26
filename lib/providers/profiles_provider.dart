@@ -78,9 +78,9 @@ class ProfilesProvider with ChangeNotifier {
           userUuid: profileData["userUuid"] ?? "",
           username: profileData["username"] ?? "",
           fullname: profileData["fullname"] ?? "",
-          phoneNumber: profileData["phoneNumber"] ?? "",
+          phoneNumber: profileData["phone_number"] ?? "",
           role: profileData["role"] ?? "",
-          password: "", // Jangan simpan password di sini
+          password: "",
         );
       } else {
         _currentProfile = null;

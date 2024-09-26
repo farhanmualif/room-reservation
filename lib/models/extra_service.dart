@@ -11,4 +11,9 @@ class ExtraService {
     required this.price,
     this.isSelected = false,
   });
+
+  factory ExtraService.fromJson(Map<dynamic, dynamic> json) {
+    return ExtraService(
+        id: json['id'], name: json["name"], price: json["price"]);
+  }
 }

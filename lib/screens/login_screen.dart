@@ -1,4 +1,7 @@
+import 'package:email_validator/email_validator.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:zenith_coffee_shop/main.dart';
 import 'package:zenith_coffee_shop/models/profile.dart';
 import 'package:zenith_coffee_shop/themes/app_color.dart';
@@ -16,6 +19,8 @@ class _LoginPageState extends State<LoginPage> {
   bool _obscureText = true;
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+
+  FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
   bool _isLoading = false;
 
   @override
@@ -45,15 +50,24 @@ class _LoginPageState extends State<LoginPage> {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 40),
-                TextField(
+                TextFormField(
                   controller: _emailController,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return "Email tidak boleh kosong";
+                    }
+                    if (!EmailValidator.validate(value)) {
+                      return "Email tidak valid";
+                    }
+                    return null;
+                  },
                   style: const TextStyle(color: Colors.white),
                   decoration: InputDecoration(
                     enabledBorder: OutlineInputBorder(
                       borderSide: const BorderSide(color: Colors.grey),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    hintText: 'Email or Phone Number',
+                    hintText: 'Email',
                     hintStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
                     filled: true,
                     fillColor: Colors.white.withOpacity(0.2),
@@ -66,7 +80,13 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                TextField(
+                TextFormField(
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return "Password tidak boleh kosong";
+                    }
+                    return null;
+                  },
                   controller: _passwordController,
                   obscureText: _obscureText,
                   decoration: InputDecoration(
@@ -158,9 +178,27 @@ class _LoginPageState extends State<LoginPage> {
 
   void _login() async {
     try {
+      if (_emailController.text.isEmpty || _emailController.text == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('Email Harap Di isi'),
+              backgroundColor: Colors.redAccent),
+        );
+        return;
+      }
+      if (_passwordController.text.isEmpty || _emailController.text == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('Email Harap Di isi'),
+              backgroundColor: Colors.redAccent),
+        );
+        return;
+      }
+
       setState(() {
         _isLoading = true;
       });
+
       Profile profile = Profile(
           email: _emailController.text,
           password: _passwordController.text,
@@ -168,8 +206,8 @@ class _LoginPageState extends State<LoginPage> {
           username: "",
           fullname: "",
           phoneNumber: "");
-      auth.AuthProvider authProvider = auth.AuthProvider();
-      await authProvider.signIn(profile);
+      _firebaseAuth.signInWithEmailAndPassword(
+          email: profile.email, password: profile.password!);
 
       if (mounted) {
         Navigator.push(
@@ -183,11 +221,21 @@ class _LoginPageState extends State<LoginPage> {
       setState(() {
         _isLoading = false;
       });
-    } catch (e) {
+    } on PlatformException catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text("Sending Message"),
-        ));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.message ?? 'An error occurred'),
+          ),
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.message ?? 'An unexpected error occurred'),
+          ),
+        );
       }
     } finally {
       setState(() {
