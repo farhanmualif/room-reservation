@@ -47,6 +47,7 @@ class RoomProvider with ChangeNotifier {
         "room_type_id": room.roomTypeId,
         "service_id": room.serviceId,
         "price": room.price,
+        "price_per_hour": room.pricePerHour,
         "isAvailable": true,
       };
       await _dbRef.child("rooms").push().set(data);
@@ -68,6 +69,7 @@ class RoomProvider with ChangeNotifier {
         "room_type_id": room.roomTypeId,
         "service_id": room.serviceId,
         "price": room.price,
+        "price_per_hour": room.pricePerHour,
         "isAvailable": true,
       });
     } catch (e) {
@@ -89,12 +91,13 @@ class RoomProvider with ChangeNotifier {
           Room room = Room(
             id: key,
             name: data["name"],
-            price: data["price"],
+            price: data["price"] ?? 0,
             description: data["description"],
             image: data["image"],
             isAvailable: data["isAvailable"],
             roomTypeId: data["room_type_id"],
             serviceId: data["service_id"],
+            pricePerHour: data["price_per_hour"] ?? 0,
           );
           _rooms.add(room);
         });
@@ -143,9 +146,10 @@ class RoomProvider with ChangeNotifier {
         description: roomData["description"],
         image: roomData["image"],
         isAvailable: roomData["isAvailable"],
-        price: roomData["price"],
+        price: roomData["price"] ?? 0,
         roomTypeId: roomData["room_type_id"],
         serviceId: roomData["service_id"],
+        pricePerHour: roomData["price_per_hour"] ?? 0,
       );
     } else {
       return null;
@@ -173,6 +177,7 @@ class RoomProvider with ChangeNotifier {
             price: value["price"],
             roomTypeId: value["room_type_id"],
             serviceId: value["service_id"],
+            pricePerHour: value["price_per_hour"] ?? 0,
           ),
         );
       });

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
+import 'package:zenith_coffee_shop/helper/thoudsand_input_formater.dart';
 import 'package:zenith_coffee_shop/models/room.dart';
 import 'package:zenith_coffee_shop/providers/room_provider.dart';
 import 'package:zenith_coffee_shop/providers/room_services_provider.dart';
@@ -24,7 +25,7 @@ class _AddRoomFormState extends State<AddRoomForm> {
 
   final _nameControler = TextEditingController();
   final _serviceControler = TextEditingController();
-  final _priceControler = TextEditingController();
+  final _pricePerHourController = TextEditingController();
   final _roomTypeControler = TextEditingController();
   final _descriptionControler = TextEditingController();
 
@@ -92,8 +93,9 @@ class _AddRoomFormState extends State<AddRoomForm> {
         description: _descriptionControler.text,
         roomTypeId: _roomTypeControler.text,
         serviceId: _serviceControler.text,
-        price:
-            int.parse(_priceControler.text.replaceAll(RegExp(r'[^0-9]'), '')),
+        price: 0,
+        pricePerHour: int.parse(
+            _pricePerHourController.text.replaceAll(RegExp(r'[^0-9]'), '')),
         isAvailable: true,
       );
       if (mounted) {
@@ -370,10 +372,10 @@ class _AddRoomFormState extends State<AddRoomForm> {
                     ),
                     const SizedBox(height: 16.0),
                     TextFormField(
-                      controller: _priceControler,
+                      controller: _pricePerHourController,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Harga tidak boleh kosong';
+                          return 'Harga per jam tidak boleh kosong';
                         }
                         return null;
                       },
@@ -381,10 +383,10 @@ class _AddRoomFormState extends State<AddRoomForm> {
                       style: const TextStyle(color: Colors.white),
                       inputFormatters: [
                         FilteringTextInputFormatter.digitsOnly,
-                        _ThousandsSeparatorInputFormatter(),
+                        ThousandsSeparatorInputFormatter(),
                       ],
                       decoration: InputDecoration(
-                        hintText: "Harga",
+                        hintText: "Harga Per Jam",
                         hintStyle:
                             TextStyle(color: Colors.white.withOpacity(0.7)),
                         filled: true,
@@ -413,7 +415,8 @@ class _AddRoomFormState extends State<AddRoomForm> {
                         ),
                         child: _isLoading
                             ? const Center(
-                                child: CircularProgressIndicator(),
+                                child: CircularProgressIndicator(
+                                    color: Colors.white),
                               )
                             : const Text(
                                 'Simpan',
@@ -429,51 +432,5 @@ class _AddRoomFormState extends State<AddRoomForm> {
         ),
       ),
     );
-  }
-}
-
-class _ThousandsSeparatorInputFormatter extends TextInputFormatter {
-  static const separator = '.'; // Change to ',' for comma separator
-
-  @override
-  TextEditingValue formatEditUpdate(
-      TextEditingValue oldValue, TextEditingValue newValue) {
-    // Short-circuit if the new value is empty
-    if (newValue.text.isEmpty) {
-      return newValue.copyWith(text: '');
-    }
-
-    // Handle "deletion" of separator character
-    String oldValueText = oldValue.text.replaceAll(separator, '');
-    String newValueText = newValue.text.replaceAll(separator, '');
-
-    if (oldValue.text.endsWith(separator) &&
-        oldValue.text.length == newValue.text.length + 1) {
-      newValueText = newValueText.substring(0, newValueText.length - 1);
-    }
-
-    // Only process if the old value and new value are different
-    if (oldValueText != newValueText) {
-      int selectionIndex =
-          newValue.text.length - newValue.selection.extentOffset;
-      final chars = newValueText.split('');
-
-      String newString = '';
-      for (int i = chars.length - 1; i >= 0; i--) {
-        if ((chars.length - 1 - i) % 3 == 0 && i != chars.length - 1)
-          newString = separator + newString;
-        newString = chars[i] + newString;
-      }
-
-      return TextEditingValue(
-        text: newString,
-        selection: TextSelection.collapsed(
-          offset: newString.length - selectionIndex,
-        ),
-      );
-    }
-
-    // If the new value and old value are the same, just return as-is
-    return newValue;
   }
 }

@@ -9,7 +9,7 @@ import 'package:provider/provider.dart';
 
 class PaymentService {
   static const String merchantServerUrl =
-      'https://5925-36-78-63-4.ngrok-free.app/payment/charge/';
+      'https://3ae0-110-136-161-26.ngrok-free.app';
   static const String clientKey = 'SB-Mid-client-tu6MIBX3dJ-Tv4GO';
 
   Future<void> startPayment(BuildContext context, Order order) async {
@@ -17,7 +17,7 @@ class PaymentService {
       MidtransSDK? midtrans = await MidtransSDK.init(
         config: MidtransConfig(
           clientKey: clientKey,
-          merchantBaseUrl: merchantServerUrl,
+          merchantBaseUrl: "$merchantServerUrl/payment/charge/",
           colorTheme: ColorTheme(
             colorPrimary: AppColors.secondary,
             colorSecondary: AppColors.primary,
@@ -31,27 +31,33 @@ class PaymentService {
       );
 
       midtrans.setTransactionFinishedCallback((result) async {
-        if (result.isTransactionCanceled != true) {
-          // Jika pembayaran berhasil, simpan reservasi
-          final reservationProvider =
-              Provider.of<ReservationProvider>(context, listen: false);
-          order.paid = true;
+        debugPrint("Transaction Result: ${result.toJson()}");
 
-          await reservationProvider.saveReservation(order);
-          if (context.mounted) {
-            Navigator.of(context).pushNamed("/payment_done");
-          }
-        } else {
+        if (result.isTransactionCanceled) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Pembayaran dibatalkan')),
+            const SnackBar(content: Text('Transaksi dibatalkan')),
           );
+          Navigator.of(context).pop();
+          return;
+        }
+
+        final reservationProvider =
+            Provider.of<ReservationProvider>(context, listen: false);
+        order.paid = true;
+        order.statusPayment = "pending";
+        order.transactionId = result.transactionId;
+
+        await reservationProvider.saveReservation(order);
+        if (context.mounted) {
+          Navigator.of(context)
+              .pushNamed("/payment_pending", arguments: order.id);
         }
       });
 
       String token = await getSnapToken(order);
       midtrans.startPaymentUiFlow(token: token);
     } catch (e) {
-      print(e);
+      debugPrint(e.toString());
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error: $e')),
@@ -62,7 +68,7 @@ class PaymentService {
 
   Future<String> getSnapToken(Order order) async {
     final response = await http.post(
-      Uri.parse(merchantServerUrl),
+      Uri.parse("$merchantServerUrl/payment/charge/"),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'order_id': order.id,
@@ -89,6 +95,23 @@ class PaymentService {
       return data['token'];
     } else {
       throw Exception('Failed to get Snap token');
+    }
+  }
+
+  Future<Map<String, dynamic>> checkPaymentStatus(String orderId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$merchantServerUrl/payment/status/$orderId'),
+      );
+
+      debugPrint("Status Response: ${response.body}");
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        return jsonDecode(response.body);
+      }
+    } catch (e) {
+      throw Exception('Error: $e');
     }
   }
 }

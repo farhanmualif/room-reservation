@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 
 class Order {
   final String id;
+  String? transactionId;
   final String roomId;
   final String accountId;
   final String ordererName;
   final String ordererEmail;
   final String ordererPhone;
-  String? status;
+  String? statusOrder;
+  String? statusPayment;
   bool? paid;
   final List<String> extraServices;
   final double totalPrice;
@@ -18,6 +20,7 @@ class Order {
 
   Order({
     required this.id,
+    this.transactionId,
     required this.roomId,
     required this.accountId,
     required this.ordererEmail,
@@ -25,7 +28,8 @@ class Order {
     required this.ordererName,
     required this.totalPrice,
     required this.extraServices,
-    this.status,
+    this.statusOrder,
+    this.statusPayment,
     this.paid,
     required this.paymentMethod,
     required this.date,
@@ -37,6 +41,7 @@ class Order {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'transaction_id': transactionId,
       'room_id': roomId,
       'orderer_name': ordererName,
       'account_od': accountId,
@@ -44,7 +49,8 @@ class Order {
       'orderer_phone': ordererPhone,
       'total_price': totalPrice,
       'extra_pervices': extraServices,
-      'status': status,
+      'status_order': statusOrder,
+      'status_payment': statusPayment,
       'paid': paid,
       'payment_method': paymentMethod,
       'date': date,
@@ -57,6 +63,7 @@ class Order {
   factory Order.fromJson(Map<String, dynamic> json) {
     return Order(
       id: json['id'],
+      transactionId: json['transaction_id'],
       roomId: json['room_id'],
       ordererName: json['orderer_name'],
       accountId: json['account_id'],
@@ -64,7 +71,8 @@ class Order {
       ordererPhone: json['orderer_phone'],
       totalPrice: json['total_price'],
       extraServices: json['extra_services'],
-      status: json['status'],
+      statusOrder: json['status_order'],
+      statusPayment: json['status_payment'],
       paid: json['paid'],
       paymentMethod: json['payment_method'],
       date: json['date'],

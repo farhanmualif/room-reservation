@@ -3,20 +3,28 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:uuid/uuid.dart';
 import 'package:zenith_coffee_shop/helper/thoudsand_input_formater.dart';
 import 'package:zenith_coffee_shop/models/room_service.dart';
 import 'package:zenith_coffee_shop/providers/room_services_provider.dart';
 import 'package:zenith_coffee_shop/themes/app_color.dart';
 
-class AddRoomServices extends StatefulWidget {
-  const AddRoomServices({super.key});
+class EditRoomServices extends StatefulWidget {
+  final String name;
+  final int price;
+  final String id;
+
+  const EditRoomServices({
+    super.key,
+    required this.name,
+    required this.price,
+    required this.id,
+  });
 
   @override
-  State<AddRoomServices> createState() => _AddRoomServicesState();
+  State<EditRoomServices> createState() => EditRoomServicesState();
 }
 
-class _AddRoomServicesState extends State<AddRoomServices> {
+class EditRoomServicesState extends State<EditRoomServices> {
   final _formKey = GlobalKey<FormState>();
 
   final _nameControler = TextEditingController();
@@ -24,6 +32,14 @@ class _AddRoomServicesState extends State<AddRoomServices> {
 
   File? pickedImage;
   bool isPicked = false;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    _nameControler.text = widget.name;
+    _priceControler.text = widget.price.toString();
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +50,7 @@ class _AddRoomServicesState extends State<AddRoomServices> {
       backgroundColor: AppColors.primary,
       appBar: AppBar(
         title: const Text(
-          "Tambah Layanan Ruangan",
+          "Edit Layanan Ruangan",
           style: TextStyle(color: Colors.white),
         ),
         leading: IconButton(
@@ -95,23 +111,46 @@ class _AddRoomServicesState extends State<AddRoomServices> {
                 ),
               ),
               const SizedBox(height: 16.0),
-
               const SizedBox(height: 32.0),
               Center(
                 child: ElevatedButton(
-                  onPressed: () {
+                  onPressed: () async { 
+                    setState(() {
+                      _isLoading = true;
+                    });
                     if (_formKey.currentState!.validate()) {
-                      String name = _nameControler.text;
-                      int price = int.parse(_priceControler.text
+                      final price = int.parse(_priceControler.text
                           .replaceAll(RegExp(r'[^0-9]'), ''));
-                      RoomService newService = RoomService(
-                        id: const Uuid().v4(),
-                        name: name,
+
+                      RoomService updatedService = RoomService(
+                        id: widget.id,
+                        name: _nameControler.text,
                         price: price,
                       );
-                      roomServicesProvider
-                          .create(newService); // Create a new service
-                      Navigator.pop(context);
+
+                      try {
+                        final provider = context.read<RoomServicesProvider>();
+                        await provider.updateService(widget.id, updatedService);
+
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content: Text('Layanan berhasil diupdate')),
+                          );
+                          Navigator.pop(context);
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                                content: Text('Gagal mengupdate layanan: $e')),
+                          );
+                        }
+                      } finally {
+                        setState(() {
+                          _isLoading = false;
+                        });
+                      }
                     }
                   },
                   style: ElevatedButton.styleFrom(

@@ -2,6 +2,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:zenith_coffee_shop/models/booking_room.dart';
+import 'package:zenith_coffee_shop/models/extra_service.dart';
 import 'package:zenith_coffee_shop/models/order.dart';
 import 'package:zenith_coffee_shop/models/reservation.dart';
 import 'package:zenith_coffee_shop/models/room.dart';
@@ -17,18 +18,23 @@ class ReservationProvider extends ChangeNotifier {
   DateTime? _selectedDate;
   TimeOfDay? _startTime;
   TimeOfDay? _endTime;
-  double? _totalPayment;
+  double _totalPayment = 0;
+  double get totalPayment => _totalPayment;
   List<BookingRoom> _bookingHistory = [];
 
   DateTime? get selectedDate => _selectedDate;
   TimeOfDay? get startTime => _startTime;
   TimeOfDay? get endTime => _endTime;
-  double? get totalPayment => _totalPayment;
   List<BookingRoom> get bookingHistory => _bookingHistory;
-
   final List<Reservation> _reservations = [];
-
   List<Reservation> get reservations => _reservations;
+  Order? _currentOrder;
+  Order? get currentOrder => _currentOrder;
+
+  set currentOrder(Order? order) {
+    _currentOrder = order;
+    notifyListeners();
+  }
 
   void setTotalPayment(double totalPayment) {
     _totalPayment = totalPayment;
@@ -91,9 +97,10 @@ class ReservationProvider extends ChangeNotifier {
         'account_id': order.accountId,
         'orderer_email': order.ordererEmail,
         'orderer_phone': order.ordererPhone,
-        'total_price': order.totalPrice,
+        'total_price': order.totalPrice.toInt(),
         'extra_pervices': order.extraServices,
-        'status': order.status,
+        'status_order': order.statusOrder,
+        'status_payment': order.statusPayment,
         'paid': order.paid,
         'payment_method': order.paymentMethod,
         'date': dateString,
@@ -235,5 +242,50 @@ class ReservationProvider extends ChangeNotifier {
     final end2Minutes = end2.hour * 60 + end2.minute;
 
     return start1Minutes < end2Minutes && start2Minutes < end1Minutes;
+  }
+
+  void calculateTotal(Room? room, List<ExtraService> extraServices) {
+    if (room == null || startTime == null || endTime == null) {
+      setTotalPayment(0);
+      return;
+    }
+
+    // Konversi waktu ke menit
+    int startMinutes = (startTime!.hour * 60) + startTime!.minute;
+    int endMinutes = (endTime!.hour * 60) + endTime!.minute;
+    int durationInMinutes = endMinutes - startMinutes;
+
+    if (durationInMinutes <= 0) {
+      durationInMinutes +=
+          24 * 60; // Tambahkan 24 jam jika melewati tengah malam
+    }
+
+    // Hitung biaya per menit
+    double pricePerMinute = room.pricePerHour / 60;
+    int roomCost = (pricePerMinute * durationInMinutes).round();
+
+    // Tambahkan biaya extra services
+    int extraServicesCost =
+        extraServices.fold(0, (sum, service) => sum + service.price);
+
+    _totalPayment = (roomCost + extraServicesCost).toDouble();
+    notifyListeners();
+  }
+
+  Future<void> updateReservationStatus(
+      String orderId, Map<String, dynamic> updates) async {
+    try {
+      final snapshot = await _dbRef.orderByChild('id').equalTo(orderId).once();
+      final data = snapshot.snapshot.value as Map<dynamic, dynamic>?;
+
+      if (data != null) {
+        String key = data.keys.first;
+        await _dbRef.child(key).update(updates);
+        notifyListeners();
+      }
+    } catch (e) {
+      print('Error updating reservation status: $e');
+      rethrow;
+    }
   }
 }

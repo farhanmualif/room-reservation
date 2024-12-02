@@ -16,6 +16,7 @@ import 'package:zenith_coffee_shop/providers/room_provider.dart';
 import 'package:zenith_coffee_shop/providers/room_services_provider.dart';
 import 'package:zenith_coffee_shop/services/payment_service.dart';
 import 'package:zenith_coffee_shop/themes/app_color.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class OrderRoomForm extends StatefulWidget {
   const OrderRoomForm({super.key});
@@ -84,17 +85,37 @@ class _OrderRoomFormContent extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             const SizedBox(height: 40),
+                            Text(
+                              'Data Pemesan',
+                              style: TextStyle(
+                                  color: Colors.white.withOpacity(0.7)),
+                            ),
+                            const SizedBox(height: 16),
                             _buildTextField(_orderersNameController, 'Nama'),
                             const SizedBox(height: 16),
                             _buildTextField(
                                 _ordererPhoneControler, 'No Telfon'),
                             const SizedBox(height: 16),
+                            Text(
+                              'Pilih Ruangan',
+                              style: TextStyle(
+                                  color: Colors.white.withOpacity(0.7)),
+                            ),
+                            const SizedBox(height: 16),
                             _buildDropdownRoomField(),
-                            const SizedBox(height: 16),
-                            const SizedBox(height: 16),
+                            Text(
+                              'Kelas Ruangan',
+                              style: TextStyle(
+                                  color: Colors.white.withOpacity(0.7)),
+                            ),
                             const SizedBox(height: 16),
                             _buildDropdownRoomTypeField(),
                             const SizedBox(height: 16),
+                            Text(
+                              'Layanan',
+                              style: TextStyle(
+                                  color: Colors.white.withOpacity(0.7)),
+                            ),
                             _buildDropdownServiceField(),
                             const SizedBox(height: 16),
                             _buildPriceTextField(),
@@ -106,6 +127,11 @@ class _OrderRoomFormContent extends StatelessWidget {
                             _buildTimeField(context, true),
                             const SizedBox(height: 16),
                             _buildTimeField(context, false),
+                            const SizedBox(height: 16),
+                            const Text(
+                              "Total Pembayaran",
+                              style: TextStyle(color: Colors.white),
+                            ),
                             const SizedBox(height: 16),
                             _buildTotalPaymentTextField(),
                             const SizedBox(height: 24),
@@ -142,50 +168,29 @@ class _OrderRoomFormContent extends StatelessWidget {
     final extraService = context.read<ExtraServicesProvider>();
     final authProvider = context.read<AuthProvider>();
     PaymentService paymentService = PaymentService();
-    print(roomProvider.selectedDetailRoom!.room.id);
 
     // Validasi input
-    if (_orderersNameController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Nama Tidak boleh kosong'),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
-      return;
-    }
-    if (_orderersNameController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Nama Tidak boleh kosong'),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
-      return;
-    }
-    if (_ordererPhoneControler.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No Telfon Pem esan Tidak boleh kosong'),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
-      return;
-    }
-
-    if (_paymentMethod.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Metode Pembayaran Tidak boleh kosong')),
-      );
-      return;
-    }
-
-    if (reservationProvider.selectedDate == null ||
+    if (_orderersNameController.text.isEmpty ||
+        _ordererPhoneControler.text.isEmpty ||
+        _paymentMethod.isEmpty ||
+        reservationProvider.selectedDate == null ||
         reservationProvider.startTime == null ||
         reservationProvider.endTime == null) {
+      String errorMessage = '';
+
+      if (_orderersNameController.text.isEmpty) {
+        errorMessage = 'Nama tidak boleh kosong';
+      } else if (_ordererPhoneControler.text.isEmpty) {
+        errorMessage = 'No Telepon tidak boleh kosong';
+      } else if (_paymentMethod.isEmpty) {
+        errorMessage = 'Metode pembayaran tidak boleh kosong';
+      } else {
+        errorMessage = 'Tanggal dan waktu tidak boleh kosong';
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Tanggal dan Waktu tidak boleh kosong'),
+        SnackBar(
+          content: Text(errorMessage),
           backgroundColor: Colors.redAccent,
         ),
       );
@@ -212,10 +217,6 @@ class _OrderRoomFormContent extends StatelessWidget {
         }
       }
 
-      int totalPrice = roomProvider.selectedDetailRoom!.roomService.price +
-          extraService.extraServicesSelected
-              .fold(0, (sum, service) => sum + service.price);
-
       Order order = Order(
         id: "RSO-${generateNow()}",
         roomId: roomProvider.selectedDetailRoom!.room.id!,
@@ -223,11 +224,12 @@ class _OrderRoomFormContent extends StatelessWidget {
         ordererName: _orderersNameController.text,
         ordererEmail: profileProvider.currentProfile!.email,
         ordererPhone: _ordererPhoneControler.text,
-        totalPrice: totalPrice.toDouble(),
+        totalPrice: reservationProvider.totalPayment,
         extraServices: extraService.extraServicesSelected
             .map((service) => service.id)
             .toList(),
-        status: 'ordered',
+        statusOrder: 'ordered',
+        statusPayment: 'pending',
         paymentMethod: _paymentMethod,
         startTime: reservationProvider.startTime!,
         endTime: reservationProvider.endTime!,
@@ -241,11 +243,27 @@ class _OrderRoomFormContent extends StatelessWidget {
           Navigator.of(context).pushNamed("/payment_done");
         }
       } else {
+        const midtransUrl =
+            'https://9a41-110-136-161-26.ngrok-free.app/payment/charge/';
+        if (midtransUrl == null || midtransUrl.isEmpty) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Konfigurasi Midtrans belum lengkap'),
+                backgroundColor: Colors.redAccent,
+              ),
+            );
+          }
+          return;
+        }
+
+        // Set current order sebelum memulai pembayaran Midtrans
+        reservationProvider.currentOrder = order;
+
         // Mulai proses pembayaran Midtrans
         if (context.mounted) {
           await paymentService.startPayment(context, order);
         }
-        // Catatan: saveReservation dipanggil di dalam startPayment jika pembayaran berhasil
       }
     } catch (e) {
       if (context.mounted) {
@@ -314,11 +332,11 @@ class _OrderRoomFormContent extends StatelessWidget {
           controller: _totalPaymentController,
           style: const TextStyle(color: Colors.white),
           decoration: InputDecoration(
-            prefixText: "Rp. ",
             hintText: reservationProvider.totalPayment != null
-                ? "${reservationProvider.totalPayment}"
+                ? currencyFormatter.format(reservationProvider.totalPayment!)
                 : roomProvider.selectedDetailRoom != null
-                    ? "${roomProvider.selectedDetailRoom!.room.price}"
+                    ? currencyFormatter
+                        .format(roomProvider.selectedRoom!.pricePerHour)
                     : "0",
             hintStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
             filled: true,
@@ -539,8 +557,7 @@ class _OrderRoomFormContent extends StatelessWidget {
     return Consumer<ReservationProvider>(
       builder: (context, reservationProvider, child) {
         return TextField(
-          style:
-              TextStyle(color: Colors.white, backgroundColor: AppColors.gray),
+          style: const TextStyle(color: Colors.white),
           cursorColor: Colors.white,
           decoration: InputDecoration(
             suffixIcon: const Icon(
@@ -588,8 +605,9 @@ class _OrderRoomFormContent extends StatelessWidget {
   }
 
   Widget _buildTimeField(BuildContext context, bool isStartTime) {
-    return Consumer<ReservationProvider>(
-      builder: (context, reservationProvider, child) {
+    return Consumer3<ReservationProvider, RoomProvider, ExtraServicesProvider>(
+      builder:
+          (context, reservationProvider, roomProvider, extraService, child) {
         return TextField(
           style: const TextStyle(color: Colors.white),
           decoration: InputDecoration(
@@ -647,6 +665,9 @@ class _OrderRoomFormContent extends StatelessWidget {
                   } else {
                     reservationProvider.setEndTime(pickedTime);
                   }
+
+                  reservationProvider.calculateTotal(roomProvider.selectedRoom,
+                      extraService.extraServicesSelected);
                 } else {
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -707,13 +728,9 @@ class _OrderRoomFormContent extends StatelessWidget {
                   } else {
                     extraService.removeExtraService(service.id);
                   }
-                  double totalPrice =
-                      roomProvider.selectedDetailRoom!.room.price!.toDouble();
-                  for (var selectedService
-                      in extraService.extraServicesSelected) {
-                    totalPrice += selectedService.price.toDouble();
-                  }
-                  reservationProvider.setTotalPayment(totalPrice);
+
+                  reservationProvider.calculateTotal(roomProvider.selectedRoom,
+                      extraService.extraServicesSelected);
                 },
                 controlAffinity: ListTileControlAffinity.leading,
                 activeColor: Colors.orange,

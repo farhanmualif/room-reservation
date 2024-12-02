@@ -5,7 +5,6 @@ import 'package:flutter/services.dart';
 import 'package:zenith_coffee_shop/main.dart';
 import 'package:zenith_coffee_shop/models/profile.dart';
 import 'package:zenith_coffee_shop/themes/app_color.dart';
-import 'package:zenith_coffee_shop/providers/auth_provider.dart' as auth;
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -20,7 +19,7 @@ class _LoginPageState extends State<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
-  FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
+  final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
   bool _isLoading = false;
 
   @override
@@ -178,23 +177,26 @@ class _LoginPageState extends State<LoginPage> {
 
   void _login() async {
     try {
-      if (_emailController.text.isEmpty || _emailController.text == null) {
+      if (_emailController.text.isEmpty) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-              content: Text('Email Harap Di isi'),
+              content: Text('Email harus diisi'),
               backgroundColor: Colors.redAccent),
         );
         return;
       }
-      if (_passwordController.text.isEmpty || _emailController.text == null) {
+      if (_passwordController.text.isEmpty) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-              content: Text('Email Harap Di isi'),
+              content: Text('Password harus diisi'),
               backgroundColor: Colors.redAccent),
         );
         return;
       }
 
+      if (!mounted) return;
       setState(() {
         _isLoading = true;
       });
@@ -206,38 +208,58 @@ class _LoginPageState extends State<LoginPage> {
           username: "",
           fullname: "",
           phoneNumber: "");
-      _firebaseAuth.signInWithEmailAndPassword(
-          email: profile.email, password: profile.password!);
 
-      if (mounted) {
-        Navigator.push(
+      try {
+        await _firebaseAuth.signInWithEmailAndPassword(
+            email: profile.email, password: profile.password!);
+
+        if (!mounted) return;
+        Navigator.pushReplacement(
           context,
           MaterialPageRoute(
             builder: (context) => const MyApp(),
           ),
         );
-      }
+      } on FirebaseAuthException catch (e) {
+        String errorMessage;
+        if (e.code == 'user-not-found') {
+          errorMessage = 'Email tidak terdaftar';
+        } else if (e.code == 'wrong-password') {
+          errorMessage = 'Password salah';
+        } else {
+          errorMessage = 'Terjadi kesalahan: ${e.message}';
+        }
 
-      setState(() {
-        _isLoading = false;
-      });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(errorMessage),
+              backgroundColor: Colors.redAccent,
+            ),
+          );
+        }
+      }
     } on PlatformException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(e.message ?? 'An error occurred'),
+            content: Text(e.message ?? 'Terjadi kesalahan'),
+            backgroundColor: Colors.redAccent,
           ),
         );
       }
-    } on FirebaseAuthException catch (e) {
+    } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.message ?? 'An unexpected error occurred'),
+          const SnackBar(
+            content: Text('Terjadi kesalahan'),
+            backgroundColor: Colors.redAccent,
           ),
         );
       }
     } finally {
+      // ignore: control_flow_in_finally
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
       });

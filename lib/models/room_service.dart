@@ -5,7 +5,6 @@ class RoomService {
 
   RoomService({required this.id, required this.name, required this.price});
 
-  // Factory method to create a RoomService from a Map
   factory RoomService.fromJson(String id, Map<dynamic, dynamic> json) {
     return RoomService(
       id: id,
@@ -13,8 +12,6 @@ class RoomService {
       price: json['price'] as int,
     );
   }
-
-  
 
   Map<String, dynamic> toJson() {
     return {

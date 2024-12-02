@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:zenith_coffee_shop/helper/idr_format_currency.dart';
 import 'package:zenith_coffee_shop/providers/room_services_provider.dart';
+import 'package:zenith_coffee_shop/screens/edit_room_services.dart';
 import 'package:zenith_coffee_shop/themes/app_color.dart';
 
 class ServiceListScreen extends StatefulWidget {
@@ -25,6 +26,48 @@ class _ServiceListScreenState extends State<ServiceListScreen> {
     final roomProvider =
         Provider.of<RoomServicesProvider>(context, listen: false);
     await roomProvider.getAllServices(); // Ambil data terbaru
+  }
+
+  Future<void> _deleteService(String serviceId, String serviceName) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.primary,
+        title: const Text('Konfirmasi Hapus',
+            style: TextStyle(color: Colors.white)),
+        content: Text(
+            'Apakah Anda yakin ingin menghapus layanan "$serviceName"?',
+            style: const TextStyle(color: Colors.white)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Hapus', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true && mounted) {
+      try {
+        final roomProvider = context.read<RoomServicesProvider>();
+        await roomProvider.deleteService(serviceId);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Layanan berhasil dihapus')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Gagal menghapus layanan: $e')),
+          );
+        }
+      }
+    }
   }
 
   @override
@@ -97,20 +140,23 @@ class _ServiceListScreenState extends State<ServiceListScreen> {
                                     children: [
                                       IconButton(
                                         onPressed: () {
-                                          // Action for Edit
-                                          print('Edit: ${service.name}');
+                                          Navigator.of(context).push(
+                                              MaterialPageRoute(
+                                                  builder: (context) =>
+                                                      EditRoomServices(
+                                                        id: service.id,
+                                                        name: service.name,
+                                                        price: service.price,
+                                                      )));
                                         },
                                         icon: Icon(Icons.edit,
                                             color: AppColors.secondary),
                                       ),
                                       IconButton(
-                                        onPressed: () {
-                                          print('Delete: ${service.name}');
-                                        },
-                                        icon: const Icon(
-                                          Icons.delete,
-                                          color: Colors.red,
-                                        ),
+                                        onPressed: () => _deleteService(
+                                            service.id, service.name),
+                                        icon: const Icon(Icons.delete,
+                                            color: Colors.red),
                                       ),
                                     ],
                                   ),

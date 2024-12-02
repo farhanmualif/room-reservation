@@ -26,9 +26,14 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
       backgroundColor: AppColors.primary,
       appBar: AppBar(
         backgroundColor: AppColors.primary,
+        elevation: 0,
         title: const Text(
           'Histori Pesanan',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
       body: Consumer<ReservationProvider>(
@@ -36,178 +41,121 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
           List<Reservation> reservation = reservationProvider.reservations;
 
           return ListView.builder(
-            scrollDirection: Axis.vertical,
+            padding: const EdgeInsets.symmetric(vertical: 10),
             itemCount: reservation.length,
             itemBuilder: (context, index) {
-              return Container(
-                decoration: BoxDecoration(
-                    border: Border.all(color: Colors.white60),
-                    borderRadius: const BorderRadius.all(Radius.circular(10))),
-                margin: const EdgeInsets.all(20),
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    TextField(
-                      style: const TextStyle(color: Colors.white),
-                      decoration: InputDecoration(
-                        enabledBorder: OutlineInputBorder(
-                          borderSide: const BorderSide(color: Colors.grey),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        hintText:
-                            "Nama pemesan: ${reservation[index].ordererName}",
-                        hintStyle:
-                            TextStyle(color: Colors.white.withOpacity(0.7)),
-                        filled: true,
-                        fillColor: Colors.white.withOpacity(0.2),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide.none,
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 14),
+              return Card(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                color: Colors.white.withOpacity(0.1),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15),
+                  side: BorderSide(color: Colors.white.withOpacity(0.3)),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildInfoRow(
+                        icon: Icons.person,
+                        label: "Nama Pemesan",
+                        value: reservation[index].ordererName,
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      style: const TextStyle(color: Colors.white),
-                      decoration: InputDecoration(
-                        enabledBorder: OutlineInputBorder(
-                          borderSide: const BorderSide(color: Colors.grey),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        hintText:
-                            "Email pemesan: ${reservation[index].ordererEmail}",
-                        hintStyle:
-                            TextStyle(color: Colors.white.withOpacity(0.7)),
-                        filled: true,
-                        fillColor: Colors.white.withOpacity(0.2),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide.none,
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 14),
+                      _buildDivider(),
+                      _buildInfoRow(
+                        icon: Icons.email,
+                        label: "Email",
+                        value: reservation[index].ordererEmail,
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      style: const TextStyle(color: Colors.white),
-                      decoration: InputDecoration(
-                        enabledBorder: OutlineInputBorder(
-                          borderSide: const BorderSide(color: Colors.grey),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        hintText:
-                            "No Handphone Pemesan: ${reservation[index].ordererPhone}",
-                        hintStyle:
-                            TextStyle(color: Colors.white.withOpacity(0.7)),
-                        filled: true,
-                        fillColor: Colors.white.withOpacity(0.2),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide.none,
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 14),
+                      _buildDivider(),
+                      _buildInfoRow(
+                        icon: Icons.phone,
+                        label: "No. Handphone",
+                        value: reservation[index].ordererPhone,
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      style: const TextStyle(color: Colors.white),
-                      decoration: InputDecoration(
-                        enabledBorder: OutlineInputBorder(
-                          borderSide: const BorderSide(color: Colors.grey),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        hintText:
-                            "Nama Ruangan: ${reservation[index].room!.name}",
-                        hintStyle:
-                            TextStyle(color: Colors.white.withOpacity(0.7)),
-                        filled: true,
-                        fillColor: Colors.white.withOpacity(0.2),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide.none,
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 14),
+                      _buildDivider(),
+                      _buildInfoRow(
+                        icon: Icons.meeting_room,
+                        label: "Ruangan",
+                        value: reservation[index].room!.name,
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      style: const TextStyle(color: Colors.white),
-                      decoration: InputDecoration(
-                        enabledBorder: OutlineInputBorder(
-                          borderSide: const BorderSide(color: Colors.grey),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        hintText:
-                            "Kelas Ruangan: ${reservation[index].roomTypeClass?.name}",
-                        hintStyle:
-                            TextStyle(color: Colors.white.withOpacity(0.7)),
-                        filled: true,
-                        fillColor: Colors.white.withOpacity(0.2),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide.none,
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 14),
+                      _buildDivider(),
+                      _buildInfoRow(
+                        icon: Icons.class_,
+                        label: "Kelas",
+                        value: reservation[index].roomTypeClass?.name ?? '-',
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      style: const TextStyle(color: Colors.white),
-                      decoration: InputDecoration(
-                        enabledBorder: OutlineInputBorder(
-                          borderSide: const BorderSide(color: Colors.grey),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        hintText: "Tanggal: ${reservation[index].date}",
-                        hintStyle:
-                            TextStyle(color: Colors.white.withOpacity(0.7)),
-                        filled: true,
-                        fillColor: Colors.white.withOpacity(0.2),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide.none,
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 14),
+                      _buildDivider(),
+                      _buildInfoRow(
+                        icon: Icons.calendar_today,
+                        label: "Tanggal",
+                        value: reservation[index].date,
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      style: const TextStyle(color: Colors.white),
-                      decoration: InputDecoration(
-                        enabledBorder: OutlineInputBorder(
-                          borderSide: const BorderSide(color: Colors.grey),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        hintText:
-                            'Mulai: ${reservation[index].startTime} - Selesai: ${reservation[index].endTime}',
-                        hintStyle:
-                            TextStyle(color: Colors.white.withOpacity(0.7)),
-                        filled: true,
-                        fillColor: Colors.white.withOpacity(0.2),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide.none,
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 14),
+                      _buildDivider(),
+                      _buildInfoRow(
+                        icon: Icons.access_time,
+                        label: "Waktu",
+                        value:
+                            "${reservation[index].startTime} - ${reservation[index].endTime}",
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
+                    ],
+                  ),
                 ),
               );
             },
           );
         },
       ),
+    );
+  }
+
+  Widget _buildDivider() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Divider(
+        color: Colors.white.withOpacity(0.2),
+        height: 1,
+      ),
+    );
+  }
+
+  Widget _buildInfoRow({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    return Row(
+      children: [
+        Icon(
+          icon,
+          color: Colors.white70,
+          size: 20,
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.7),
+                  fontSize: 12,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                value,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

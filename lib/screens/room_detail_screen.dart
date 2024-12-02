@@ -6,17 +6,17 @@ import 'package:zenith_coffee_shop/helper/idr_format_currency.dart';
 import 'package:zenith_coffee_shop/providers/auth_provider.dart';
 import 'package:zenith_coffee_shop/providers/profiles_provider.dart';
 import 'package:zenith_coffee_shop/providers/room_provider.dart';
+import 'package:zenith_coffee_shop/screens/home_screen.dart';
 import 'package:zenith_coffee_shop/themes/app_color.dart';
 
 class RoomDetailScreen extends StatefulWidget {
   const RoomDetailScreen({super.key});
 
   @override
-  // ignore: library_private_types_in_public_api
-  _RoomDetailScreenState createState() => _RoomDetailScreenState();
+  State<RoomDetailScreen> createState() => RoomDetailScreenState();
 }
 
-class _RoomDetailScreenState extends State<RoomDetailScreen> {
+class RoomDetailScreenState extends State<RoomDetailScreen> {
   DetailRoom? roomDetail;
   bool isLoading = true;
   String? errorMessage;
@@ -85,7 +85,7 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
                   fit: StackFit.expand,
                   children: [
                     Image.network(
-                      roomDetail!.room.image!,
+                      roomDetail!.room.image,
                       fit: BoxFit.cover,
                       height: MediaQuery.of(context).size.height * 0.6,
                     ),
@@ -113,17 +113,17 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
                                         ),
                                       ),
                                     ),
-                                    const Row(
-                                      children: [
-                                        Icon(Icons.star,
-                                            color: Colors.orange, size: 18),
-                                        SizedBox(width: 4),
-                                        Text(
-                                          '4.6 (1,250)',
-                                          style: TextStyle(color: Colors.white),
-                                        ),
-                                      ],
-                                    )
+                                    // const Row(
+                                    //   children: [
+                                    //     Icon(Icons.star,
+                                    //         color: Colors.orange, size: 18),
+                                    //     SizedBox(width: 4),
+                                    //     Text(
+                                    //       '4.6 (1,250)',
+                                    //       style: TextStyle(color: Colors.white),
+                                    //     ),
+                                    //   ],
+                                    // )
                                   ],
                                 ),
                                 ReadMoreText(
@@ -135,8 +135,8 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
                                   children: [
                                     Expanded(
                                       child: Text(
-                                        currencyFormatter
-                                            .format(roomDetail!.room.price!),
+                                        currencyFormatter.format(
+                                            roomDetail!.room.pricePerHour),
                                         style: const TextStyle(
                                           color: Colors.white,
                                           fontSize: 18,
@@ -144,19 +144,19 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
                                         ),
                                       ),
                                     ),
-                                    ElevatedButton(
-                                      onPressed: () {},
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: AppColors.secondary,
-                                        shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(10)),
-                                      ),
-                                      child: const Text(
-                                        "Add To Cart",
-                                        style: TextStyle(color: Colors.white),
-                                      ),
-                                    )
+                                    // ElevatedButton(
+                                    //   onPressed: () {},
+                                    //   style: ElevatedButton.styleFrom(
+                                    //     backgroundColor: AppColors.secondary,
+                                    //     shape: RoundedRectangleBorder(
+                                    //         borderRadius:
+                                    //             BorderRadius.circular(10)),
+                                    //   ),
+                                    //   child: const Text(
+                                    //     "Add To Cart",
+                                    //     style: TextStyle(color: Colors.white),
+                                    //   ),
+                                    // )
                                   ],
                                 )
                               ],
@@ -286,14 +286,9 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.primary,
-        title: const Text(
-          'Konfirmasi',
-          style: TextStyle(color: Colors.white),
-        ),
-        content: const Text(
-          'Apakah Anda yakin ingin menghapus Room ini?',
-          style: TextStyle(color: Colors.white),
-        ),
+        title: const Text('Konfirmasi', style: TextStyle(color: Colors.white)),
+        content: const Text('Apakah Anda yakin ingin menghapus Room ini?',
+            style: TextStyle(color: Colors.white)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -308,17 +303,19 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
     );
 
     if (confirm == true) {
+      if (!context.mounted) return;
+      final roomProvider = context.read<RoomProvider>();
+      final authProvider = context.read<AuthProvider>();
+      final profileProvider = context.read<ProfilesProvider>();
+
+      await roomProvider.deleteRoom(id);
+      await profileProvider
+          .fetchProfileByUid(authProvider.currentUser?.uid ?? '');
+
       if (context.mounted) {
-        await context.read<RoomProvider>().deleteRoom(id);
-        if (context.mounted) {
-          Navigator.of(context)
-              .pushReplacementNamed("/room_selection")
-              .then((_) {
-            if (context.mounted) {
-              context.read<RoomProvider>().fetchRooms();
-            }
-          });
-        }
+        Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const HomeScreen()));
+        await roomProvider.fetchRooms(); // Refresh daftar room
       }
     }
   }

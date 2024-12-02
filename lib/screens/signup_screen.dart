@@ -206,7 +206,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
     return TextFormField(
       controller: controller,
       style: const TextStyle(color: Colors.white),
-      keyboardType: keyboardType,
+      keyboardType: hintText == 'Email Address'
+          ? TextInputType.emailAddress
+          : hintText == 'Phone Number'
+              ? TextInputType.phone
+              : keyboardType,
       decoration: InputDecoration(
         hintText: hintText,
         hintStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
@@ -224,6 +228,18 @@ class _SignUpScreenState extends State<SignUpScreen> {
       validator: (value) {
         if (value == null || value.isEmpty) {
           return '$hintText is required';
+        }
+        if (hintText == 'Email Address') {
+          final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+          if (!emailRegex.hasMatch(value)) {
+            return 'Format email tidak valid';
+          }
+        }
+        if (hintText == 'Phone Number') {
+          final phoneRegex = RegExp(r'^(\+62|62|0)8[1-9][0-9]{6,9}$');
+          if (!phoneRegex.hasMatch(value)) {
+            return 'Format nomor telepon tidak valid (contoh: 08123456789)';
+          }
         }
         return null;
       },

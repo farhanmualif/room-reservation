@@ -18,10 +18,12 @@ import 'package:zenith_coffee_shop/screens/forgot_password_screen.dart';
 import 'package:zenith_coffee_shop/screens/home_screen.dart';
 import 'package:zenith_coffee_shop/screens/order_room_form.dart';
 import 'package:zenith_coffee_shop/screens/payment_done.dart';
+import 'package:zenith_coffee_shop/screens/payment_pending_screen.dart';
 import 'package:zenith_coffee_shop/screens/room_detail_screen.dart';
 import 'package:zenith_coffee_shop/screens/room_type_list_screen.dart';
 import 'package:zenith_coffee_shop/screens/service_list_screen.dart';
 import 'package:zenith_coffee_shop/screens/update_room_form.dart';
+import 'package:zenith_coffee_shop/screens/user_order_history.dart';
 import 'package:zenith_coffee_shop/themes/app_color.dart';
 import 'providers/auth_provider.dart';
 import 'screens/login_screen.dart';
@@ -156,7 +158,11 @@ class MyApp extends StatelessWidget {
               '/order_confirmation': (context) => OrderConfirmationPage(),
               '/profile': (context) => const ProfilePage(),
               '/order_history': (context) => const OrderHistoryPage(),
+              '/user_order_history': (context) => const UserOrderHistoryPage(),
               '/payment_done': (context) => const PaymentDone(),
+              '/payment_pending': (context) => PaymentPendingScreen(
+                orderId: ModalRoute.of(context)?.settings.arguments as String? ?? '',
+              ),
             },
           );
         },

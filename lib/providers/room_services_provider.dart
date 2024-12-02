@@ -79,7 +79,7 @@ class RoomServicesProvider with ChangeNotifier {
     }
   }
 
- static Future<RoomService?> getById(String roomTypeId) async {
+  static Future<RoomService?> getById(String roomTypeId) async {
     DatabaseReference roomServiceRef = FirebaseDatabase.instance
         .ref()
         .child("room_services")
@@ -130,6 +130,54 @@ class RoomServicesProvider with ChangeNotifier {
       // Set isLoading to false after fetching data fails
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  Future<void> deleteService(String serviceId) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      await _firebaseInstance.child("room_services").child(serviceId).remove();
+
+      // Hapus dari list lokal
+      _roomServices.removeWhere((service) => service.id == serviceId);
+
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _error = "Gagal menghapus layanan: $e";
+      _isLoading = false;
+      notifyListeners();
+      throw Exception(_error);
+    }
+  }
+
+  Future<void> updateService(String id, RoomService service) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      Map<String, dynamic> data = {
+        "name": service.name,
+        "price": service.price,
+      };
+
+      await _firebaseInstance.child("room_services").child(id).update(data);
+
+      // Update list lokal
+      final index = _roomServices.indexWhere((s) => s.id == id);
+      if (index != -1) {
+        _roomServices[index] = service;
+      }
+
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _error = "Gagal mengupdate layanan: $e";
+      _isLoading = false;
+      notifyListeners();
+      throw Exception(_error);
     }
   }
 }

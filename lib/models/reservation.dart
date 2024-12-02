@@ -14,6 +14,7 @@ class Reservation {
   final String ordererPhone;
   final bool paid;
   final String paymentMethod;
+  final String statusPayment;
   final String roomId;
   final String startTime;
   final String status;
@@ -37,6 +38,7 @@ class Reservation {
     required this.ordererPhone,
     required this.paid,
     required this.paymentMethod,
+    required this.statusPayment,
     required this.roomId,
     required this.startTime,
     required this.status,
@@ -55,7 +57,7 @@ class Reservation {
           : [],
       room: map['room'] != null
           ? Room.fromJson(map['room']["id"], map['room'])
-          : Room(), // assume Room has a fromMap constructor
+          : Room.empty(),
       roomService: map['room_services'] != null
           ? RoomService.fromJson(
               map["room_services"]["id"], map['room_services'])
@@ -72,6 +74,7 @@ class Reservation {
       roomId: map['room_id'] ?? '',
       startTime: map['start_time'] ?? '',
       status: map['status'] ?? '',
+      statusPayment: map['status_payment'] ?? '',
       totalPrice: map['total_price'] ?? 0,
     );
   }

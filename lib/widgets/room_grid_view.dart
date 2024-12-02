@@ -100,7 +100,7 @@ class RoomGridView extends StatelessWidget {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            currencyFormatter.format(room.price ?? 0.0),
+                            currencyFormatter.format(room.pricePerHour ?? 0.0),
                             style: TextStyle(
                               color: AppColors.secondary,
                               fontSize: 14,

@@ -1,35 +1,50 @@
 class Room {
   final String? id;
-  final String? name;
-  final String? image;
-  final String? description;
+  final String name;
+  final String image;
+  final String description;
   final String? roomTypeId;
   final String? serviceId;
-  final int? price;
-  final bool? isAvailable;
+  @Deprecated('Use pricePerHour instead')
+  final int price;
+  final int pricePerHour;
+  final bool isAvailable;
 
   Room({
     this.id,
-    this.name,
-    this.image,
-    this.description,
+    required this.name,
+    required this.image,
+    required this.description,
     this.roomTypeId,
     this.serviceId,
-    this.price,
-    this.isAvailable = true,
+    required this.price,
+    required this.pricePerHour,
+    required this.isAvailable,
   });
+
+  Room.empty()
+      : id = '',
+        name = '',
+        image = '',
+        description = '',
+        roomTypeId = '',
+        serviceId = '',
+        price = 0,
+        pricePerHour = 0,
+        isAvailable = false;
 
   factory Room.fromJson(String id, Map<dynamic, dynamic> json) {
     return Room(
       id: id,
-      description: json['description'] as String?,
-      image: json['image'] as String?,
+      description: json['description'] as String? ?? '',
+      image: json['image'] as String? ?? '',
       isAvailable:
           json['is_available'] == null ? true : json['is_available'] as bool,
-      name: json['name'] as String?,
-      price: json['price'] as int?,
+      name: json['name'] as String? ?? '',
+      price: json['price'] as int? ?? 0,
       roomTypeId: json['room_type_id'] as String?,
       serviceId: json['service_id'] as String?,
+      pricePerHour: json['price_per_hour'] as int? ?? 0,
     );
   }
 
@@ -42,6 +57,7 @@ class Room {
       'price': price,
       'room_type_id': roomTypeId,
       'service_id': serviceId,
+      'price_per_hour': pricePerHour,
     };
   }
 }

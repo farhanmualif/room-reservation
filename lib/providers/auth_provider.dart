@@ -8,6 +8,8 @@ class AuthProvider with ChangeNotifier {
   final DatabaseReference _dbRef = FirebaseDatabase.instance.ref('profiles');
 
   User? _currentUser;
+  String? _error;
+  String? get error => _error;
 
   // Sign in method
   Future<User> signIn(Profile profile) async {
@@ -106,12 +108,12 @@ class AuthProvider with ChangeNotifier {
   // Stream to listen for auth state changes
   Stream<User?> get authStateChanges => _firebaseAuth.authStateChanges();
 
-  // AuthProvider() {
-  //   authStateChanges.listen((User? user) {
-  //     _currentUser = user;
-  //     notifyListeners(); // Notify listeners that the current user has changed
-  //   });
-  // }
+  AuthProvider() {
+    authStateChanges.listen((User? user) {
+      _currentUser = user;
+      notifyListeners();
+    });
+  }
 
   // Public _dbRef
   DatabaseReference get dbRef => _dbRef;

@@ -86,65 +86,50 @@ class _UpdateRoomFormState extends State<UpdateRoomForm> {
   Future<void> _updateRoom() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final selectedRoom = context.read<RoomProvider>().selectedRoom!;
     setState(() => _isLoading = true);
 
     try {
-      final imageUrl = await _getImageUrl(context);
-      String? image;
-      // Ambil referensi ke node yang ingin diupdate
-      if (mounted) {
-        image = context.read<RoomProvider>().selectedRoom!.image!;
-      }
-      final roomRef =
-          FirebaseStorage.instance.ref().child('room_images/$image');
-
-      // Jika gambar lama ada dan user memilih gambar baru
-      if (mounted) {
-        if (pickedImage != null &&
-            context.read<RoomProvider>().selectedRoom!.image != imageUrl) {
-          // Hapus gambar lama dari Storage
-          await roomRef.delete();
+      String imageUrl;
+      if (pickedImage != null) {
+        final uploadedImageUrl = await _uploadImage(pickedImage!);
+        if (uploadedImageUrl == null) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text("Gagal Melakukan update Room")));
+            return;
+          }
         }
+        imageUrl = uploadedImageUrl!;
+      } else {
+        imageUrl = selectedRoom.image;
       }
 
-      // Update data baru ke node
-      Room? room;
-      if (mounted) {
-        room = Room(
-          id: context.read<RoomProvider>().selectedRoom!.id,
-          name: _nameControler.text,
-          image: imageUrl,
-          description: _descriptionControler.text,
-          roomTypeId: _roomTypeControler.text,
-          serviceId: _serviceControler.text,
-          price:
-              int.parse(_priceControler.text.replaceAll(RegExp(r'[^0-9]'), '')),
-          isAvailable: true,
-        );
-      }
+      final room = Room(
+        id: selectedRoom.id,
+        name: _nameControler.text,
+        image: imageUrl,
+        description: _descriptionControler.text,
+        roomTypeId: _roomTypeControler.text,
+        serviceId: _serviceControler.text,
+        price: 0,
+        pricePerHour:
+            int.parse(_priceControler.text.replaceAll(RegExp(r'[^0-9]'), '')),
+        isAvailable: true,
+      );
 
-      // Update data ke Realtime Database
       if (mounted) {
-        await context.read<RoomProvider>().update(room!);
+        final roomProvider = context.read<RoomProvider>();
+        await roomProvider.update(room);
       }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text(
-              'Berhasil Menyimpan data Room',
-            ),
+            content: Text('Berhasil Menyimpan data Room'),
             backgroundColor: Colors.green,
           ),
         );
-      }
-
-      if (mounted) {
-        await context.read<RoomProvider>().fetchRooms();
-      }
-
-      if (mounted) {
-        Navigator.of(context).pop();
       }
     } catch (e) {
       if (mounted) {
@@ -156,7 +141,9 @@ class _UpdateRoomFormState extends State<UpdateRoomForm> {
         );
       }
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -255,7 +242,7 @@ class _UpdateRoomFormState extends State<UpdateRoomForm> {
                                       color: Colors.blueGrey[100],
                                       image: DecorationImage(
                                         image: NetworkImage(
-                                            roomProvider.selectedRoom!.image!),
+                                            roomProvider.selectedRoom!.image),
                                         fit: BoxFit.cover,
                                       ),
                                     ),

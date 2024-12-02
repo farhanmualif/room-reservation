@@ -126,15 +126,50 @@ class ExtraServicesProvider with ChangeNotifier {
   }
 
   Future<void> deleteExtraService(String id) async {
-    _setLoading(true);
     try {
-      await _firebaseInstance.child(id).remove();
+      _isLoading = true;
+      notifyListeners();
+
+      await _firebaseInstance.child("extra_services").child(id).remove();
+
+      // Hapus dari list lokal
       _extraServices.removeWhere((service) => service.id == id);
-      _setError(null);
+
+      _isLoading = false;
+      notifyListeners();
     } catch (e) {
-      _setError("Failed to delete Service: $e");
-    } finally {
-      _setLoading(false);
+      _error = "Gagal menghapus layanan: $e";
+      _isLoading = false;
+      notifyListeners();
+      throw Exception(_error);
+    }
+  }
+
+  Future<void> updateExtraService(String id, ExtraService service) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      Map<String, dynamic> data = {
+        "name": service.name,
+        "price": service.price,
+      };
+
+      await _firebaseInstance.child("extra_services").child(id).update(data);
+
+      // Update list lokal
+      final index = _extraServices.indexWhere((s) => s.id == id);
+      if (index != -1) {
+        _extraServices[index] = service;
+      }
+
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _error = "Gagal mengupdate layanan: $e";
+      _isLoading = false;
+      notifyListeners();
+      throw Exception(_error);
     }
   }
 

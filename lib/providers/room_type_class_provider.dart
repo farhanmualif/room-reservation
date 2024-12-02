@@ -106,7 +106,7 @@ class RoomTypeClassProvider with ChangeNotifier {
     }
   }
 
- static Future<RoomTypeClass?> getById(String roomTypeId) async {
+  static Future<RoomTypeClass?> getById(String roomTypeId) async {
     DatabaseReference roomTypeRef = FirebaseDatabase.instance
         .ref()
         .child("room_types_class")
@@ -127,7 +127,7 @@ class RoomTypeClassProvider with ChangeNotifier {
   }
 
   Future<RoomTypeClass?> getByid(String roomTypeId) async {
-        DatabaseReference roomTypeRef = FirebaseDatabase.instance
+    DatabaseReference roomTypeRef = FirebaseDatabase.instance
         .ref()
         .child("room_types_class")
         .child(roomTypeId);
@@ -141,10 +141,29 @@ class RoomTypeClassProvider with ChangeNotifier {
       return RoomTypeClass(
         id: roomTypeId,
         name: roomData["name"],
-
       );
     } else {
       return null;
+    }
+  }
+
+  Future<void> deleteType(String id) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      await _firebaseInstance.child("room_types_class").child(id).remove();
+      
+      // Hapus dari list lokal
+      _roomType.removeWhere((type) => type.id == id);
+      
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _error = "Gagal menghapus tipe ruangan: $e";
+      _isLoading = false;
+      notifyListeners();
+      throw Exception(_error);
     }
   }
 }

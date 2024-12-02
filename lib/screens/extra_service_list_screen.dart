@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:zenith_coffee_shop/helper/idr_format_currency.dart';
 import 'package:zenith_coffee_shop/providers/extra_services_provider.dart';
+import 'package:zenith_coffee_shop/screens/edit_extra_services.dart';
 import 'package:zenith_coffee_shop/themes/app_color.dart';
 
 class ExtraServiceListScreen extends StatefulWidget {
@@ -116,12 +117,19 @@ class _ExtraServiceListScreenState extends State<ExtraServiceListScreen> {
                       children: [
                         IconButton(
                           onPressed: () {
-                            print('Edit: ${service.name}');
+                            Navigator.of(context).push(MaterialPageRoute(
+                                builder: (context) => EditExtraServices(
+                                      name: service.name,
+                                      price: service.price,
+                                      id: service.id,
+                                    )));
                           },
                           icon: Icon(Icons.edit, color: AppColors.secondary),
                         ),
                         IconButton(
-                          onPressed: () => _deleteService(context, service.id),
+                          onPressed: () {
+                            _deleteService(context, service.id);
+                          },
                           icon: const Icon(Icons.delete, color: Colors.red),
                         ),
                       ],

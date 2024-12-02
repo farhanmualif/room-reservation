@@ -14,13 +14,55 @@ class _RoomTypeListScreenState extends State<RoomTypeListScreen> {
   @override
   void initState() {
     super.initState();
-    final roomProvider = Provider.of<RoomTypeClassProvider>(context, listen: false);
+    final roomProvider =
+        Provider.of<RoomTypeClassProvider>(context, listen: false);
     roomProvider.getAllTypes();
   }
 
   Future<void> _refreshData() async {
-    final roomProvider = Provider.of<RoomTypeClassProvider>(context, listen: false);
+    final roomProvider =
+        Provider.of<RoomTypeClassProvider>(context, listen: false);
     await roomProvider.getAllTypes(); // Ambil data terbaru
+  }
+
+  Future<void> _deleteType(String id, String name) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.primary,
+        title: const Text('Konfirmasi Hapus',
+            style: TextStyle(color: Colors.white)),
+        content: Text('Apakah Anda yakin ingin menghapus tipe "$name"?',
+            style: const TextStyle(color: Colors.white)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Hapus', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true && mounted) {
+      try {
+        await context.read<RoomTypeClassProvider>().deleteType(id);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Tipe ruangan berhasil dihapus')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Gagal menghapus tipe ruangan: $e')),
+          );
+        }
+      }
+    }
   }
 
   @override
@@ -32,7 +74,7 @@ class _RoomTypeListScreenState extends State<RoomTypeListScreen> {
           floatingActionButton: FloatingActionButton(
             onPressed: () {
               Navigator.of(context).pushNamed("/add_type_room").then((_) {
-                roomType.getAllTypes(); 
+                roomType.getAllTypes();
               });
             },
             backgroundColor: AppColors.secondary,
@@ -87,9 +129,8 @@ class _RoomTypeListScreenState extends State<RoomTypeListScreen> {
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       IconButton(
-                                        onPressed: () {
-                                          print('Delete: ${service.name}');
-                                        },
+                                        onPressed: () => _deleteType(
+                                            service.id, service.name),
                                         icon: const Icon(
                                           Icons.delete,
                                           color: Colors.red,
