@@ -109,6 +109,14 @@ class _UserOrderHistoryPageState extends State<UserOrderHistoryPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      _buildInfoRow(
+                        icon: Icons.numbers,
+                        label: "ID Transaksi",
+                        value: reservation.id,
+                        orderId: reservation.id,
+                        valueColor: Colors.orange,
+                      ),
+                      const SizedBox(height: 12),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [

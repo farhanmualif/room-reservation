@@ -105,7 +105,7 @@ class RoomDetailScreenState extends State<RoomDetailScreen> {
                                   children: [
                                     Expanded(
                                       child: Text(
-                                        "${roomDetail!.room.name!} ${roomDetail!.roomType.name}",
+                                        "${roomDetail!.room.name} ${roomDetail!.roomType.name}",
                                         style: const TextStyle(
                                           color: Colors.white,
                                           fontSize: 24,
@@ -199,7 +199,7 @@ class RoomDetailScreenState extends State<RoomDetailScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    roomDetail!.room.description!,
+                    roomDetail!.room.description,
                     style: TextStyle(color: Colors.grey[600]),
                   ),
                   const SizedBox(height: 16),

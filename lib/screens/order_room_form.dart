@@ -1,4 +1,3 @@
-// File: order_room_form.dart
 // ignore_for_file: must_be_immutable
 
 import 'package:flutter/material.dart';
@@ -16,7 +15,6 @@ import 'package:zenith_coffee_shop/providers/room_provider.dart';
 import 'package:zenith_coffee_shop/providers/room_services_provider.dart';
 import 'package:zenith_coffee_shop/services/payment_service.dart';
 import 'package:zenith_coffee_shop/themes/app_color.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class OrderRoomForm extends StatefulWidget {
   const OrderRoomForm({super.key});
@@ -44,12 +42,18 @@ class _OrderRoomFormState extends State<OrderRoomForm> {
   }
 }
 
-class _OrderRoomFormContent extends StatelessWidget {
+class _OrderRoomFormContent extends StatefulWidget {
+  @override
+  State<_OrderRoomFormContent> createState() => _OrderRoomFormContentState();
+}
+
+class _OrderRoomFormContentState extends State<_OrderRoomFormContent> {
   final _orderersNameController = TextEditingController();
   final _priceServiceController = TextEditingController();
   final _totalPaymentController = TextEditingController();
   final _ordererPhoneControler = TextEditingController();
   String _paymentMethod = "COD";
+  bool _isLoading = false;
 
   @override
   Widget build(BuildContext context) {
@@ -122,6 +126,11 @@ class _OrderRoomFormContent extends StatelessWidget {
                             const SizedBox(height: 16),
                             _buildExtraServices(),
                             const SizedBox(height: 16),
+                            const Text(
+                              "Tentuka Tanggal dan Waktu Pemensanan",
+                              style: TextStyle(color: Colors.white),
+                            ),
+                            const SizedBox(height: 16),
                             _buildDateField(context),
                             const SizedBox(height: 16),
                             _buildTimeField(context, true),
@@ -140,12 +149,23 @@ class _OrderRoomFormContent extends StatelessWidget {
                             ElevatedButton(
                               style: ElevatedButton.styleFrom(
                                   backgroundColor: AppColors.secondary),
-                              onPressed: () => _handleReservation(context),
-                              child: const Text(
-                                'Pesan',
-                                style: TextStyle(
-                                    fontSize: 16, color: Colors.white),
-                              ),
+                              onPressed: _isLoading
+                                  ? null
+                                  : () => _handleReservation(context),
+                              child: _isLoading
+                                  ? const SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Text(
+                                      'Pesan',
+                                      style: TextStyle(
+                                          fontSize: 16, color: Colors.white),
+                                    ),
                             )
                           ],
                         ),
@@ -162,20 +182,63 @@ class _OrderRoomFormContent extends StatelessWidget {
   }
 
   Future<void> _handleReservation(BuildContext context) async {
-    final reservationProvider = context.read<ReservationProvider>();
-    final roomProvider = context.read<RoomProvider>();
-    final profileProvider = context.read<ProfilesProvider>();
-    final extraService = context.read<ExtraServicesProvider>();
-    final authProvider = context.read<AuthProvider>();
-    PaymentService paymentService = PaymentService();
+    if (_isLoading) return;
 
-    // Validasi input
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // 1. Validasi input dasar
+      if (!_validateInputs(context)) {
+        return;
+      }
+
+      final reservationProvider = context.read<ReservationProvider>();
+      final roomProvider = context.read<RoomProvider>();
+      final profileProvider = context.read<ProfilesProvider>();
+      final extraService = context.read<ExtraServicesProvider>();
+      final authProvider = context.read<AuthProvider>();
+
+      // 2. Validasi ketersediaan waktu
+      if (!await _validateTimeSlot(
+          context, reservationProvider, roomProvider)) {
+        return;
+      }
+
+      // 3. Buat objek Order
+      Order order = _createOrder(
+        authProvider,
+        roomProvider,
+        profileProvider,
+        extraService,
+        reservationProvider,
+      );
+
+      // 4. Proses berdasarkan metode pembayaran
+      if (_paymentMethod == "COD") {
+        if (!context.mounted) return;
+        await _processCODPayment(order, reservationProvider, context);
+      } else {
+        if (!context.mounted) return;
+        await _processOnlinePayment(order, context);
+      }
+    } catch (e) {
+        if (!context.mounted) return;
+      _handleError(context, e);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  bool _validateInputs(BuildContext context) {
     if (_orderersNameController.text.isEmpty ||
         _ordererPhoneControler.text.isEmpty ||
-        _paymentMethod.isEmpty ||
-        reservationProvider.selectedDate == null ||
-        reservationProvider.startTime == null ||
-        reservationProvider.endTime == null) {
+        _paymentMethod.isEmpty) {
       String errorMessage = '';
 
       if (_orderersNameController.text.isEmpty) {
@@ -184,8 +247,6 @@ class _OrderRoomFormContent extends StatelessWidget {
         errorMessage = 'No Telepon tidak boleh kosong';
       } else if (_paymentMethod.isEmpty) {
         errorMessage = 'Metode pembayaran tidak boleh kosong';
-      } else {
-        errorMessage = 'Tanggal dan waktu tidak boleh kosong';
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -194,84 +255,108 @@ class _OrderRoomFormContent extends StatelessWidget {
           backgroundColor: Colors.redAccent,
         ),
       );
-      return;
+      return false;
+    }
+    return true;
+  }
+
+  Future<bool> _validateTimeSlot(
+    BuildContext context,
+    ReservationProvider reservationProvider,
+    RoomProvider roomProvider,
+  ) async {
+    if (reservationProvider.selectedDate == null ||
+        reservationProvider.startTime == null ||
+        reservationProvider.endTime == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Tanggal dan waktu tidak boleh kosong'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return false;
     }
 
-    try {
-      bool isAvailable = await reservationProvider.isTimeSlotAvailable(
-        roomProvider.selectedDetailRoom!.room.id!,
-        reservationProvider.selectedDate!,
-        reservationProvider.startTime!,
-        reservationProvider.endTime!,
+    bool isAvailable = await reservationProvider.isTimeSlotAvailable(
+      roomProvider.selectedDetailRoom!.room.id!,
+      reservationProvider.selectedDate!,
+      reservationProvider.startTime!,
+      reservationProvider.endTime!,
+    );
+
+    if (!isAvailable && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Slot waktu ini tidak tersedia'),
+          backgroundColor: Colors.redAccent,
+        ),
       );
+      return false;
+    }
 
-      if (!isAvailable) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Slot waktu ini tidak tersedia'),
-              backgroundColor: Colors.redAccent,
-            ),
-          );
-          return;
-        }
-      }
+    return true;
+  }
 
-      Order order = Order(
-        id: "RSO-${generateNow()}",
-        roomId: roomProvider.selectedDetailRoom!.room.id!,
-        accountId: authProvider.userId!,
-        ordererName: _orderersNameController.text,
-        ordererEmail: profileProvider.currentProfile!.email,
-        ordererPhone: _ordererPhoneControler.text,
-        totalPrice: reservationProvider.totalPayment,
-        extraServices: extraService.extraServicesSelected
-            .map((service) => service.id)
-            .toList(),
-        statusOrder: 'ordered',
-        statusPayment: 'pending',
-        paymentMethod: _paymentMethod,
-        startTime: reservationProvider.startTime!,
-        endTime: reservationProvider.endTime!,
-        date: reservationProvider.selectedDate!,
+  Order _createOrder(
+    AuthProvider authProvider,
+    RoomProvider roomProvider,
+    ProfilesProvider profileProvider,
+    ExtraServicesProvider extraService,
+    ReservationProvider reservationProvider,
+  ) {
+    return Order(
+      id: "RSO-${generateNow()}",
+      roomId: roomProvider.selectedDetailRoom!.room.id!,
+      accountId: authProvider.userId!,
+      ordererName: _orderersNameController.text,
+      ordererEmail: profileProvider.currentProfile!.email,
+      ordererPhone: _ordererPhoneControler.text,
+      totalPrice: reservationProvider.totalPayment,
+      extraServices: extraService.extraServicesSelected
+          .map((service) => service.id)
+          .toList(),
+      statusOrder: 'ordered',
+      statusPayment: 'pending',
+      paymentMethod: _paymentMethod,
+      startTime: reservationProvider.startTime!,
+      endTime: reservationProvider.endTime!,
+      date: reservationProvider.selectedDate!,
+    );
+  }
+
+  Future<void> _processCODPayment(
+    Order order,
+    ReservationProvider reservationProvider,
+    BuildContext context,
+  ) async {
+    order.paid = false;
+    await reservationProvider.saveReservation(order);
+    if (context.mounted) {
+      Navigator.of(context).pushNamed("/payment_done");
+    }
+  }
+
+  Future<void> _processOnlinePayment(Order order, BuildContext context) async {
+    PaymentService paymentService = PaymentService();
+
+    // Set current order sebelum memulai pembayaran
+    final reservationProvider = context.read<ReservationProvider>();
+    reservationProvider.currentOrder = order;
+
+    // Mulai proses pembayaran Midtrans
+    if (context.mounted) {
+      await paymentService.startPayment(context, order);
+    }
+  }
+
+  void _handleError(BuildContext context, dynamic error) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $error'),
+          backgroundColor: Colors.redAccent,
+        ),
       );
-
-      if (_paymentMethod == "COD") {
-        order.paid = false;
-        await reservationProvider.saveReservation(order);
-        if (context.mounted) {
-          Navigator.of(context).pushNamed("/payment_done");
-        }
-      } else {
-        const midtransUrl =
-            'https://9a41-110-136-161-26.ngrok-free.app/payment/charge/';
-        if (midtransUrl == null || midtransUrl.isEmpty) {
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Konfigurasi Midtrans belum lengkap'),
-                backgroundColor: Colors.redAccent,
-              ),
-            );
-          }
-          return;
-        }
-
-        // Set current order sebelum memulai pembayaran Midtrans
-        reservationProvider.currentOrder = order;
-
-        // Mulai proses pembayaran Midtrans
-        if (context.mounted) {
-          await paymentService.startPayment(context, order);
-        }
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text('Error: $e'), backgroundColor: Colors.redAccent),
-        );
-      }
     }
   }
 
@@ -298,17 +383,16 @@ class _OrderRoomFormContent extends StatelessWidget {
     return Consumer<RoomProvider>(
       builder: (context, roomProvider, child) {
         _priceServiceController.text =
-            "${roomProvider.selectedDetailRoom?.roomService.price}";
+            roomProvider.selectedDetailRoom?.roomService.price != null
+                ? currencyFormatter
+                    .format(roomProvider.selectedDetailRoom!.roomService.price)
+                : "0";
+
         return TextField(
           readOnly: true,
           controller: _priceServiceController,
           style: const TextStyle(color: Colors.white),
           decoration: InputDecoration(
-            prefixText: "Rp. ",
-            hintText: roomProvider.selectedDetailRoom != null
-                ? currencyFormatter
-                    .format(roomProvider.selectedDetailRoom?.roomService.price)
-                : "0",
             hintStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
             filled: true,
             fillColor: Colors.white.withOpacity(0.1),

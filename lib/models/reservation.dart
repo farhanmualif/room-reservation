@@ -47,7 +47,7 @@ class Reservation {
 
   factory Reservation.fromMap(String key, Map<String, dynamic> map) {
     return Reservation(
-      id: key,
+      id: map['id'],
       accountId: map['account_id'] ?? '',
       date: map['date'] ?? '',
       endTime: map['end_time'] ?? '',

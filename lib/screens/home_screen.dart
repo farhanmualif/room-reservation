@@ -38,16 +38,16 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _initializeProfile();
+    Future.delayed(Duration.zero, () {
+      _initializeProfile();
+    });
   }
 
   void _initializeProfile() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final uid = _firebaseAuth.currentUser?.uid ?? '';
-      if (mounted) {
-        context.read<ProfilesProvider>().fetchProfileByUid(uid);
-      }
-    });
+    final uid = _firebaseAuth.currentUser?.uid ?? '';
+    if (mounted) {
+      context.read<ProfilesProvider>().fetchProfileByUid(uid);
+    }
   }
 
   @override

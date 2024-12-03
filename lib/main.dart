@@ -2,7 +2,6 @@ import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:zenith_coffee_shop/firebase_options.dart';
 import 'package:zenith_coffee_shop/providers/extra_services_provider.dart';
 import 'package:zenith_coffee_shop/providers/profiles_provider.dart';
 import 'package:zenith_coffee_shop/providers/reservation_provider.dart';
@@ -33,11 +32,9 @@ import 'screens/order_confirmation_page.dart';
 import 'screens/profile_page.dart';
 import 'screens/order_history.dart';
 
-void main() async {
+void main() async { 
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp();
   runApp(const MyApp());
 }
 
@@ -141,7 +138,7 @@ class MyApp extends StatelessWidget {
             routes: {
               '/sign_in': (context) => const LoginPage(),
               '/sign_up': (context) => const SignUpScreen(),
-              '/forgot_password': (context) => const ForgotPasswordScreen(),
+              '/forgot_password': (context) =>  ForgotPasswordScreen(),
               '/room_selection': (context) => const RoomSelectionPage(),
               '/detail_room': (context) => const RoomDetailScreen(),
               '/order_room_form': (context) => const OrderRoomForm(),
@@ -161,8 +158,10 @@ class MyApp extends StatelessWidget {
               '/user_order_history': (context) => const UserOrderHistoryPage(),
               '/payment_done': (context) => const PaymentDone(),
               '/payment_pending': (context) => PaymentPendingScreen(
-                orderId: ModalRoute.of(context)?.settings.arguments as String? ?? '',
-              ),
+                    orderId:
+                        ModalRoute.of(context)?.settings.arguments as String? ??
+                            '',
+                  ),
             },
           );
         },

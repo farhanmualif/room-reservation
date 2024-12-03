@@ -12,6 +12,7 @@ import 'package:zenith_coffee_shop/screens/room_detail_screen.dart';
 import 'package:zenith_coffee_shop/themes/app_color.dart';
 import 'package:zenith_coffee_shop/widgets/room_card.dart';
 import 'package:zenith_coffee_shop/widgets/room_grid_view.dart';
+import 'package:zenith_coffee_shop/widgets/shimmer_loading.dart';
 
 class RoomSelectionPage extends StatefulWidget {
   const RoomSelectionPage({super.key});
@@ -54,11 +55,24 @@ class _RoomSelectionPageState extends State<RoomSelectionPage> {
           Provider.of<RoomTypeClassProvider>(context, listen: false);
 
       try {
+        // Tambahkan delay singkat untuk memastikan Firebase sudah siap
+        await Future.delayed(const Duration(milliseconds: 100));
+
         await Future.wait([
-          roomProvider.fetchRooms(),
+          roomProvider.fetchRooms().catchError((e) {
+            debugPrint('Error fetching rooms: $e');
+            return null;
+          }),
           profileProvider
-              .fetchProfileByUid(authProvider.currentUser?.uid ?? ''),
-          roomTypeProvider.getAllTypes(),
+              .fetchProfileByUid(authProvider.currentUser?.uid ?? '')
+              .catchError((e) {
+            debugPrint('Error fetching profile: $e');
+            return null;
+          }),
+          roomTypeProvider.getAllTypes().catchError((e) {
+            debugPrint('Error fetching room types: $e');
+            return null;
+          }),
         ]);
       } catch (e) {
         debugPrint('Error initializing data: $e');
@@ -114,8 +128,11 @@ class _RoomSelectionPageState extends State<RoomSelectionPage> {
       appBar: _buildAppBar(),
       drawer: _buildDrawer(),
       body: RefreshIndicator(
+        color: AppColors.secondary,
+        backgroundColor: Colors.white,
         onRefresh: _refreshData,
         child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
@@ -146,16 +163,26 @@ class _RoomSelectionPageState extends State<RoomSelectionPage> {
   }
 
   Widget _buildRoomList() {
+    // Memastikan data ruangan dimuat saat widget diinisialisasi
+    @override
+    void initState() {
+      super.initState();
+      Future.delayed(Duration.zero, () {
+        if (mounted) {
+          context.read<RoomProvider>().fetchRooms();
+        }
+      });
+    }
     return Consumer<RoomProvider>(
       builder: (context, roomProvider, child) {
         if (roomProvider.isLoading) {
-          return const Center(child: CircularProgressIndicator());
+          return const ShimmerLoading();
         } else if (roomProvider.error != null) {
           return Center(child: Text(roomProvider.error!));
         } else if (roomProvider.rooms.isEmpty) {
           return const Center(
               child: Text(
-            'Tidak ada kamar tersedia',
+            'Tidak ada Ruangan tersedia',
             style: TextStyle(color: Colors.white),
           ));
         }

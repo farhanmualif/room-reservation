@@ -32,7 +32,6 @@ class EditRoomServicesState extends State<EditRoomServices> {
 
   File? pickedImage;
   bool isPicked = false;
-  bool _isLoading = false;
 
   @override
   void initState() {
@@ -116,7 +115,6 @@ class EditRoomServicesState extends State<EditRoomServices> {
                 child: ElevatedButton(
                   onPressed: () async { 
                     setState(() {
-                      _isLoading = true;
                     });
                     if (_formKey.currentState!.validate()) {
                       final price = int.parse(_priceControler.text
@@ -148,7 +146,6 @@ class EditRoomServicesState extends State<EditRoomServices> {
                         }
                       } finally {
                         setState(() {
-                          _isLoading = false;
                         });
                       }
                     }

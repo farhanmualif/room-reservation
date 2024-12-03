@@ -12,24 +12,8 @@ class AuthProvider with ChangeNotifier {
   String? get error => _error;
 
   // Sign in method
-  Future<User> signIn(Profile profile) async {
-    return await _signInWithEmailAndPassword(profile.email, profile.password!);
-  }
 
-  Future<User> _signInWithEmailAndPassword(
-      String email, String password) async {
-    final UserCredential userCredential = await _firebaseAuth
-        .signInWithEmailAndPassword(email: email, password: password);
-
-    if (userCredential.user == null) {
-      throw FirebaseAuthException(
-        code: 'null-user',
-        message: 'Failed to sign in: User is null',
-      );
-    }
-
-    return userCredential.user!;
-  }
+  
 
   // Sign up method
   Future<User> signUp(Profile profile) async {

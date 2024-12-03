@@ -1,9 +1,7 @@
 import 'package:email_validator/email_validator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:zenith_coffee_shop/main.dart';
-import 'package:zenith_coffee_shop/models/profile.dart';
 import 'package:zenith_coffee_shop/themes/app_color.dart';
 
 class LoginPage extends StatefulWidget {
@@ -21,6 +19,8 @@ class _LoginPageState extends State<LoginPage> {
 
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
   bool _isLoading = false;
+  double _buttonWidth = 300;
+  BorderRadius _borderRadius = BorderRadius.circular(8);
 
   @override
   Widget build(BuildContext context) {
@@ -121,24 +121,40 @@ class _LoginPageState extends State<LoginPage> {
                   alignment: Alignment.centerRight,
                   child: TextButton(
                     onPressed: () {
-                      Navigator.of(context).pushNamed("/forgot_password");
+                      Navigator.of(context).pushNamed('/forgot_password');
                     },
-                    child: Text(
-                      'Forgot password?',
-                      style: TextStyle(color: Colors.white.withOpacity(0.7)),
-                    ),
+                    child: const Text('Lupa Password?'),
                   ),
                 ),
                 const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: _login,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.secondary,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                  child: const Text(
-                    'Login',
-                    style: TextStyle(fontSize: 16, color: Colors.white),
+                Center(
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    width: _isLoading ? 50 : _buttonWidth,
+                    child: ElevatedButton(
+                      onPressed: _isLoading ? null : _login,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.secondary,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: _borderRadius,
+                        ),
+                      ),
+                      child: _isLoading
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Text(
+                              'Login',
+                              style:
+                                  TextStyle(fontSize: 16, color: Colors.white),
+                            ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -175,75 +191,82 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  void _login() async {
+  Future<bool> _checkUserExists(String email) async {
     try {
-      if (_emailController.text.isEmpty) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Email harus diisi'),
-              backgroundColor: Colors.redAccent),
-        );
-        return;
+      final list = await _firebaseAuth.fetchSignInMethodsForEmail(email);
+      debugPrint('List: $list');
+      if (list.isNotEmpty) {
+        return true;
+      } else {
+        return false;
       }
-      if (_passwordController.text.isEmpty) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Password harus diisi'),
-              backgroundColor: Colors.redAccent),
-        );
-        return;
-      }
+    } catch (e) {
+      debugPrint('Exception: $e');
+      return false;
+    }
+  }
 
-      if (!mounted) return;
-      setState(() {
-        _isLoading = true;
-      });
+  void _login() async {
+    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Email dan password harus diisi'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
 
-      Profile profile = Profile(
-          email: _emailController.text,
-          password: _passwordController.text,
-          role: "",
-          username: "",
-          fullname: "",
-          phoneNumber: "");
+    setState(() {
+      _isLoading = true;
+      _buttonWidth = 50;
+      _borderRadius = BorderRadius.circular(25);
+    });
 
-      try {
-        await _firebaseAuth.signInWithEmailAndPassword(
-            email: profile.email, password: profile.password!);
+    try {
+      final userCredential = await _firebaseAuth.signInWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
 
-        if (!mounted) return;
+      if (mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(
-            builder: (context) => const MyApp(),
-          ),
+          MaterialPageRoute(builder: (context) => const MyApp()),
         );
-      } on FirebaseAuthException catch (e) {
-        String errorMessage;
-        if (e.code == 'user-not-found') {
-          errorMessage = 'Email tidak terdaftar';
-        } else if (e.code == 'wrong-password') {
-          errorMessage = 'Password salah';
-        } else {
-          errorMessage = 'Terjadi kesalahan: ${e.message}';
-        }
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(errorMessage),
-              backgroundColor: Colors.redAccent,
-            ),
-          );
-        }
       }
-    } on PlatformException catch (e) {
+    } on FirebaseAuthException catch (e) {
+      String errorMessage;
+
+      switch (e.code) {
+        case 'invalid-credential':
+          errorMessage = 'Email atau password salah';
+          break;
+        case 'user-not-found':
+          errorMessage = 'Email tidak terdaftar';
+          break;
+        case 'wrong-password':
+          errorMessage = 'Password salah';
+          break;
+        case 'invalid-email':
+          errorMessage = 'Format email tidak valid';
+          break;
+        case 'user-disabled':
+          errorMessage = 'Akun ini telah dinonaktifkan';
+          break;
+        case 'too-many-requests':
+          errorMessage =
+              'Terlalu banyak percobaan login. Silakan coba lagi nanti';
+          break;
+        default:
+          errorMessage = 'Terjadi kesalahan saat login';
+          debugPrint('Error code: ${e.code}');
+      }
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(e.message ?? 'Terjadi kesalahan'),
+            content: Text(errorMessage),
             backgroundColor: Colors.redAccent,
           ),
         );
@@ -251,18 +274,20 @@ class _LoginPageState extends State<LoginPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Terjadi kesalahan'),
+          SnackBar(
+            content: Text('Terjadi kesalahan: ${e.toString()}'),
             backgroundColor: Colors.redAccent,
           ),
         );
       }
     } finally {
-      // ignore: control_flow_in_finally
-      if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _buttonWidth = 300;
+          _borderRadius = BorderRadius.circular(8);
+        });
+      }
     }
   }
 }

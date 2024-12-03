@@ -1,7 +1,7 @@
 import 'package:intl/intl.dart';
 
-
 final currencyFormatter = NumberFormat.currency(
-  locale: 'id_ID', // Indonesian locale
-  symbol: 'Rp ', // Indonesian Rupiah symbol
+  locale: 'id_ID',
+  symbol: 'Rp ',
+  decimalDigits: 0,
 );

@@ -1,15 +1,27 @@
 import 'package:flutter/material.dart';
-import 'package:zenith_coffee_shop/screens/home_screen.dart';
 import 'package:zenith_coffee_shop/screens/room_selection_screen.dart';
 import 'package:zenith_coffee_shop/themes/app_color.dart';
 import 'package:zenith_coffee_shop/services/payment_service.dart';
 import 'package:zenith_coffee_shop/providers/reservation_provider.dart';
 import 'package:provider/provider.dart';
 
-class PaymentPendingScreen extends StatelessWidget {
+class PaymentPendingScreen extends StatefulWidget {
   final String orderId;
 
   const PaymentPendingScreen({super.key, required this.orderId});
+
+  @override
+  State<PaymentPendingScreen> createState() => _PaymentPendingScreenState();
+}
+
+class _PaymentPendingScreenState extends State<PaymentPendingScreen> {
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    debugPrint('Payment Pending Screen - Order ID: ${widget.orderId}');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -50,54 +62,84 @@ class PaymentPendingScreen extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                 ),
-                onPressed: () async {
-                  try {
-                    final reservationProvider =
-                        Provider.of<ReservationProvider>(context,
-                            listen: false);
+                onPressed: _isLoading
+                    ? null
+                    : () async {
+                        debugPrint(
+                            'Checking payment status for Order ID: ${widget.orderId}');
+                        setState(() {
+                          _isLoading = true;
+                        });
 
-                    final paymentService = PaymentService();
-                    final status =
-                        await paymentService.checkPaymentStatus(orderId);
-                    debugPrint("Status: $status");
+                        try {
+                          final reservationProvider =
+                              Provider.of<ReservationProvider>(context,
+                                  listen: false);
 
-                    if (!context.mounted) return;
+                          final paymentService = PaymentService();
+                          debugPrint("Order ID: ${widget.orderId}");
 
-                    if (status['status'] == 'settlement' ||
-                        status['status'] == 'capture') {
-                      await reservationProvider.updateReservationStatus(
-                        orderId,
-                        {
-                          'status_payment': 'success',
-                          'paid': true,
-                          'status_order': 'confirmed'
-                        },
-                      );
-                      if (!context.mounted) return;
-                      Navigator.of(context)
-                          .pushReplacementNamed('/payment_done');
-                    } else if (status['status'] == 'pending') {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text('Pembayaran masih dalam proses')),
-                      );
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text(
-                                'Pembayaran belum selesai atau dibatalkan')),
-                      );
-                    }
-                  } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Error: $e')),
-                    );
-                  }
-                },
-                child: const Text(
-                  'Cek Status Pembayaran',
-                  style: TextStyle(color: Colors.white),
-                ),
+                          final status = await paymentService
+                              .checkPaymentStatus(widget.orderId);
+                          debugPrint("Status payment: $status");
+                          debugPrint(
+                              "Transaction status: ${status['data']['transaction_status']}");
+
+                          if (!context.mounted) return;
+
+                          if (status['data']['transaction_status'] ==
+                                  'settlement' ||
+                              status['data']['transaction_status'] ==
+                                  'capture') {
+                            await reservationProvider.updateReservationStatus(
+                              widget.orderId,
+                              {
+                                'status_payment': 'success',
+                                'paid': true,
+                                'status_order': 'confirmed'
+                              },
+                            );
+                            if (!context.mounted) return;
+                            Navigator.of(context)
+                                .pushReplacementNamed('/payment_done');
+                          } else if (status['status'] == 'pending') {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                  content:
+                                      Text('Pembayaran masih dalam proses')),
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                  content: Text(
+                                      'Pembayaran belum selesai atau dibatalkan')),
+                            );
+                          }
+                        } catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Error: $e')),
+                          );
+                        } finally {
+                          if (mounted) {
+                            setState(() {
+                              _isLoading = false;
+                            });
+                          }
+                        }
+                      },
+                child: _isLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : const Text(
+                        'Cek Status Pembayaran',
+                        style: TextStyle(color: Colors.white),
+                      ),
               ),
               const SizedBox(height: 16),
               ElevatedButton(

@@ -47,25 +47,21 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
       await authProvider.signUp(profile);
 
-      debugPrint({
-        "username": profile.username,
-        "email": profile.email,
-        "fullname": profile.fullname,
-        "phone_number": profile.phoneNumber
-      }.toString());
+      // Sign out setelah signup berhasil
+      await FirebaseAuth.instance.signOut();
 
       setState(() => _isLoading = false);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Pendaftaran berhasil!')),
-        );
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const MyApp(),
+          const SnackBar(
+            content: Text('Pendaftaran berhasil! Silakan login.'),
+            backgroundColor: Colors.green,
           ),
         );
+
+        // Kembali ke halaman login
+        Navigator.pop(context);
       }
     } on FirebaseAuthException catch (e) {
       _handleFirebaseAuthError(e);
